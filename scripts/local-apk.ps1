@@ -28,9 +28,7 @@ Run 'node scripts/build.mjs'
 if (-not (Test-Path android)) { Run 'npx cap add android' }
 Run 'node scripts/patch-android.mjs'
 Run 'npx cap sync android'
-Push-Location android
-Run 'gradlew.bat assembleRelease --no-daemon -q'
-Pop-Location
+Run 'android\gradlew.bat -p android assembleRelease --no-daemon -q'
 Run 'node scripts/make-keystore.mjs'
 Run 'node scripts/sign-apk.mjs'
 Write-Host ''

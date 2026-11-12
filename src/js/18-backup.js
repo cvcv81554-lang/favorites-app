@@ -36,12 +36,15 @@ const Backup=(()=>{
   const loadMan=async()=>{ if(!man) man=(await DB.kvGet('bkman').catch(()=>null))||{}; return man; };
   const safe=id=>String(id).replace(/[^\w.-]/g,'_').slice(0,80);
   async function backupItem(it){ const sid=safe(it.id), names=[], old=new Set((man[it.id]||[]));
+    // يكتب صورة واحدة في مجلد النسخ (نسخ ملف مباشر إن كانت في مخزن الملفات) ويرجع مرجعها
+    const putImg=async(p,tag)=>{ if(!PB.local(p)) return p; const n=sid+'-'+tag+'-'+PB.size(p)+'.'+extOf(PB.type(p)); names.push(n);
+      if(!old.has(n)){ const m=PB.file(p);
+        if(m){ await rmF('photos/'+n); await FS().copy({from:'photos/'+m.f,directory:FST.dir(),to:P('photos/'+n),toDirectory:root}); }
+        else await FS().writeFile({path:P('photos/'+n),directory:root,data:await b64OfBlob(PB.toBlob(p)),recursive:true}); }
+      return 'file:'+n; };
     const photos=[]; let k=0;
-    for(const p of (it.photos||[])){ const b=PB.toBlob(p); if(!b){ photos.push(p); continue; }
-      const n=sid+'-'+(k++)+'-'+b.size+'.'+extOf(b.type); names.push(n); photos.push('file:'+n);
-      if(!old.has(n)) await FS().writeFile({path:P('photos/'+n),directory:root,data:await b64OfBlob(b),recursive:true}); }
-    let thumb=it.thumb||''; const tb=PB.toBlob(it.thumb);
-    if(tb){ const n=sid+'-t-'+tb.size+'.'+extOf(tb.type); names.push(n); thumb='file:'+n; if(!old.has(n)) await FS().writeFile({path:P('photos/'+n),directory:root,data:await b64OfBlob(tb),recursive:true}); }
+    for(const p of (it.photos||[])) photos.push(await putImg(p,k++));
+    const thumb=it.thumb?await putImg(it.thumb,'t'):'';
     await wText('items/'+sid+'.json',JSON.stringify({...it,photos,thumb}));
     for(const n of old) if(!names.includes(n)) await rmF('photos/'+n);
     man[it.id]=names; }
@@ -99,10 +102,11 @@ const Backup=(()=>{
       y.thumb=cleanImage(x.thumb)||''; return y; });
     const minors=safeItems.filter(minorRec), ok=safeItems.filter(x=>!minorRec(x));   // بوابة +18 على المستورد أيضًا
     const byId=new Map(items.map(i=>[i.id,i])); const add=[],upd=[]; let same=0;
-    ok.forEach(x=>{ const cur=byId.get(x.id); if(!cur) add.push(x); else if((x.updated||0)>(cur.updated||0)) upd.push(x); else same++; });
+    const broken=c=>(c.photos||[]).length<(c._want||0)||(FST.on&&(c.photos||[]).some(p=>PB.map.has(p)))||DB.legacy.includes(c.id);
+    ok.forEach(x=>{ const cur=byId.get(x.id); if(!cur) add.push(x); else { cur._want=x.photos.length; const fix=broken(cur); delete cur._want; if((x.updated||0)>(cur.updated||0)||fix) upd.push(x); else same++; } });
     const hasMeta=(j.prefs&&typeof j.prefs==='object')||(j.lists||[]).length||(j.wlists||[]).length;
     if(!add.length&&!upd.length&&!hasMeta){ toast('لا جديد في هذا الملف'); return false; }
-    if(!(await askConfirm('في الملف '+j.items.length+' ممثلة: '+add.length+' جديدة، '+upd.length+' أحدث من نسختك (ستُحدَّث)، '+same+' بلا تغيير.'+(minors.length?' سيُتجاوز '+minors.length+' سجل تاريخ ميلاده أقل من 18 سنة أو غير مفهوم ('+minors.slice(0,3).map(m=>m.name).join('، ')+').':'')+' لن يُحذف شيء عندك. متابعة؟','استيراد'))) return false;
+    if(!(await askConfirm('في الملف '+j.items.length+' ممثلة: '+add.length+' جديدة، '+upd.length+' أحدث من نسختك أو صورها ناقصة عندك (ستُحدَّث)، '+same+' بلا تغيير.'+(minors.length?' سيُتجاوز '+minors.length+' سجل تاريخ ميلاده أقل من 18 سنة أو غير مفهوم ('+minors.slice(0,3).map(m=>m.name).join('، ')+').':'')+' لن يُحذف شيء عندك. متابعة؟','استيراد'))) return false;
     busy.show('جارٍ الاستيراد…');
     try{ const all=[...add,...upd]; all.forEach(normItem); items.push(...add);
       upd.forEach(x=>{ const k=items.findIndex(i=>i.id===x.id); if(k>=0) items[k]=x; });

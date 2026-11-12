@@ -92,7 +92,7 @@ function fixAll(){
     if(ch){ it.updated=Date.now(); touched.add(it); } });
   _wCache=null; if(touched.size) save([...touched]); return n;
 }
-const heavy=p=>{ const b=PB.toBlob(p); return !!b&&/^image\/(jpeg|webp)/.test(b.type)&&b.size>350000; };
+const heavy=p=>PB.local(p)&&/^image\/(jpeg|webp)/.test(PB.type(p))&&PB.size(p)>350000;
 function sizeReport(){
   let ph=0, nph=0, big=[], cand=0, candB=0;
   items.forEach(it=>(it.photos||[]).forEach((p,k)=>{ if(typeof p!=='string') return; const sz=PB.size(p); ph+=sz; nph++; big.push([sz,it.name,k]); if(heavy(p)){ cand++; candB+=sz; } }));
@@ -132,7 +132,7 @@ function drawTools(out,what){
     const r=sizeReport(); const nW=items.reduce((a,i)=>a+(i.works||[]).length,0);
     out.innerHTML=`<div class="v19res"><div class="v19row ok"><i>▦</i><span>${items.length} ممثلة · ${nW} عمل · ${r.nph} صورة (نحو ${mb(r.ph)} MB)</span></div>`+
       (r.big.length?`<div class="v19row"><i>↑</i><span>أثقل الصور: ${r.big.map(b=>`${esc(b[1])} (${Math.round(b[0]/1024)}KB)`).join('، ')}</span></div>`:'')+
-      `<div class="v19row ok"><i>◈</i><span>تخزين الصور: ${PB.on?'Blob (محسّن)':'نصوص base64 (المتصفح لا يدعم Blob بأمان)'}</span></div><div class="v19row ${r.cand?'bad':'ok'}"><i>${r.cand?'!':'✓'}</i><span>${r.cand?`${r.cand} صورة ثقيلة (أكبر من 350KB) — ضغطها يخفّف التطبيق والنسخ الاحتياطي`:'لا توجد صور ثقيلة'}</span></div></div>`+
+      `<div class="v19row ok"><i>◈</i><span>تخزين الصور: ${FST.on?'ملفات على الجهاز':PB.on?'Blob (محسّن)':'نصوص base64 (المتصفح لا يدعم Blob بأمان)'}</span></div><div class="v19row ${r.cand?'bad':'ok'}"><i>${r.cand?'!':'✓'}</i><span>${r.cand?`${r.cand} صورة ثقيلة (أكبر من 350KB) — ضغطها يخفّف التطبيق والنسخ الاحتياطي`:'لا توجد صور ثقيلة'}</span></div></div>`+
       (r.cand?`<button class="btn gold" id="v19opt" style="margin-top:8px">ضغط ${r.cand} صورة (يوفّر نحو ${mb(r.candB*.5)} MB)</button>`:'')+`<div id="v19q" class="src" style="margin-top:8px"></div>`;
     const b=out.querySelector('#v19opt'); if(b) b.onclick=()=>optimize(out);
     if(navigator.storage&&navigator.storage.estimate) navigator.storage.estimate().then(e=>{ const q=out.querySelector('#v19q'); if(q&&e&&e.quota) q.textContent='المساحة المستخدمة في المتصفح: '+mb(e.usage||0)+' MB من '+mb(e.quota)+' MB'; }).catch(()=>{});

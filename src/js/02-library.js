@@ -137,7 +137,7 @@ function openLists(){
 // ===== ThePornDB: دوال مشتركة =====
 const hdr=()=>({Authorization:'Bearer '+LS.get('vkte_key'),Accept:'application/json'});
 const aliasStr=a=>(Array.isArray(a)?a:[]).map(x=>typeof x==='string'?x:(x&&x.name)||'').filter(Boolean).join(', ');
-const imgsOf=p=>{ const a=[p.image,p.face,p.thumbnail]; (p.posters||[]).forEach(x=>a.push(x&&(x.url||x))); return [...new Set(a.filter(u=>typeof u==='string'&&u))].slice(0,6); };
+const imgsOf=p=>{ const a=[p.image]; (p.posters||[]).forEach(x=>a.push(x&&(x.url||x))); a.push(p.face,p.thumbnail); return [...new Set(a.filter(u=>typeof u==='string'&&u))].slice(0,6); };
 const mapP=p=>{ const ex=p.extras||{}; const raw=String(ex.birthday||p.birthday||'').trim(); const b=raw.match(/^\d{4}-\d{2}-\d{2}/); const im=imgsOf(p); return {id:p.id,name:p.name||'',aliases:aliasStr(p.aliases),country:ex.nationality||ex.birthplace_code||ex.birthplace||'',birth:b?b[0]:'',birthRaw:raw,img:im[0]||'',imgs:im}; };
 const rcRow=(m,n)=>`<div class="rc" data-n="${n}"><div class="ph" style="width:54px;aspect-ratio:3/4;flex:none;border-radius:10px;font-size:1.3rem">${m.img?`<img class="on" src="${esc(m.img)}" referrerpolicy="no-referrer" loading="lazy" onerror="this.remove()" alt="">`:'♡'}</div><div style="min-width:0"><div class="nm">${esc(m.name)}</div><div class="sub">${esc([m.aliases,m.country,m.birth||m.birthRaw].filter(Boolean).join(' · ')||'بيانات محدودة')}</div></div></div>`;
 const httpErr=s=>{ const e=new Error('http'); e.status=s; return e; };

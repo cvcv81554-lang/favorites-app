@@ -90,7 +90,7 @@ const check = await phone.page.evaluate(async src => {
   const exp = await exportItems(), by = new Map(exp.map(i => [i.id, i])), diffs = [];
   const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   for (const s of src.items) { if (s.id === 'sample-minor') continue; const e = by.get(s.id); if (!e) { diffs.push(s.id + ': مفقود'); continue; }
-    for (const k of Object.keys(s)) { if (s.id === 'sample-v4' && (k === 'works' || k === 'criteria' || k === 'thumb')) continue; if (k === 'thumb') { if (s.thumb && !e.thumb) diffs.push(s.id + '.thumb'); continue; } /* المصغّرات القديمة تُرقّى للدقة الأعلى تلقائيًا */ if (!eq(s[k], e[k])) diffs.push(s.id + '.' + k); } }
+    for (const k of Object.keys(s)) { if (s.id === 'sample-v4' && (k === 'works' || k === 'criteria' || k === 'thumb')) continue; if (k === 'thumbV') continue; if (k === 'thumb') { if (s.thumb && !e.thumb) diffs.push(s.id + '.thumb'); continue; } /* المصغّرات القديمة تُرقّى للدقة الأعلى تلقائيًا */ if (!eq(s[k], e[k])) diffs.push(s.id + '.' + k); } }
   const v4 = by.get('sample-v4');
   return { n: items.length, minor: items.some(i => i.id === 'sample-minor'), diffs, v4works: v4 && v4.works.map(w => w.t + '|' + w.s + '|' + w.y), v4crit: v4 && v4.criteria, v4thumb: !!(v4 && v4.thumb),
     lists: lists.length, wlists: wlists.length, sort: LS.get('vkte_sort'), ign: LS.get('vkte_rec_ignored'), blobs: items.every(i => (i.photos || []).every(p => p.startsWith('blob:'))) };

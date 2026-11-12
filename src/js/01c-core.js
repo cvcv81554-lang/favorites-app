@@ -111,7 +111,7 @@ const allSites=()=>[...new Set(items.flatMap(i=>(i.works||[]).map(w=>w.s)).filte
 // ===== الصور: تصغير + مصغّرة للبطاقات =====
 const MAXPH=30;
 // v31: خط صور أعلى جودة. تصغير على مراحل (أنعم وأحدّ من تصغير مرة واحدة)، تصحيح الاتجاه، وWebP عند دعمه (أصغر بنحو 30% بنفس الجودة).
-const IMGQ={ full:1800, fullQ:.9, thumb:480, thumbQ:.84 };
+const IMGQ={ full:1800, fullQ:.9, thumb:640, thumbQ:.86 };
 const _webp=(()=>{ try{ return document.createElement('canvas').toDataURL('image/webp').startsWith('data:image/webp'); }catch{ return false; } })();
 const IMGTYPE=_webp?'image/webp':'image/jpeg';
 async function _decode(src){ // src: File|Blob|string
@@ -138,10 +138,10 @@ async function backfillThumbs(){
         document.querySelectorAll('.card[data-id="'+it.id+'"] .ph img.on,.av img[data-pid="'+it.id+'"]').forEach(im=>{ im.src=pic(it); }); } }catch{}
     if(++k%2===0) await new Promise(r=>setTimeout(r,TVLITE?120:40)); }
   // v31: ترقية هادئة لمصغّرات الإصدارات السابقة (360px) إلى الدقة الأعلى، مرة واحدة لكل ممثلة وبالأولوية للظاهر. الصور الأصلية لا تُمس.
-  const up=items.filter(it=>it.thumbV!==2&&it.photos&&it.photos[0]&&(PB.map.has(it.photos[0])||PB.isData(it.photos[0]))).sort((a,b)=>(order.has(a.id)?order.get(a.id):1e9)-(order.has(b.id)?order.get(b.id):1e9));
+  const up=items.filter(it=>it.thumbV!==3&&it.photos&&it.photos[0]&&PB.local(it.photos[0])).sort((a,b)=>(order.has(a.id)?order.get(a.id):1e9)-(order.has(b.id)?order.get(b.id):1e9));
   let u=0; for(const it of up){ if(!items.includes(it)) continue; if(document.hidden){ await new Promise(r=>{ const f=()=>{ if(!document.hidden){ removeEventListener('visibilitychange',f); r(); } }; addEventListener('visibilitychange',f); }); }
-    try{ const t=await mkThumb(it.photos[0]); if(items.includes(it)){ it.thumb=t; it.thumbV=2; await save(it); ch=true; 
-        document.querySelectorAll('.card[data-id="'+it.id+'"] .ph img.on').forEach(im=>{ im.src=pic(it); }); } }catch{ it.thumbV=2; }
+    try{ const t=await mkThumb(it.photos[0]); if(items.includes(it)){ it.thumb=t; it.thumbV=3; await save(it); ch=true; 
+        document.querySelectorAll('.card[data-id="'+it.id+'"] .ph img.on').forEach(im=>{ im.src=pic(it); }); } }catch{ it.thumbV=3; }
     if(++u%2===0) await new Promise(r=>setTimeout(r,TVLITE?200:90)); }
   if(ch&&!document.querySelector('.overlay.show')&&!TVLITE) render(); }
 

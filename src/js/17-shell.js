@@ -4,8 +4,10 @@ async function fetchImage(url){
   if(IS_NATIVE){
     const r=await NATIVE.CapacitorHttp.get({url,responseType:'blob'}); if(r.status<200||r.status>=300) throw httpErr(r.status);
     const h=r.headers||{}; const ct=String(h['Content-Type']||h['content-type']||'image/jpeg').split(';')[0].trim();
-    if(!/^image\//.test(ct)) throw new Error('not image');
-    const b=PB.fromData('data:'+ct+';base64,'+String(r.data||'').replace(/\s+/g,'')); if(!b||!b.size) throw new Error('empty'); return b; }
+    const d64=String(r.data||'').replace(/\s+/g,''), sig=d64.slice(0,6);
+    const mime=/^\/9j\//.test(sig)?'image/jpeg':/^iVBOR/.test(sig)?'image/png':/^UklGR/.test(sig)?'image/webp':/^R0lGOD/.test(sig)?'image/gif':(/^image\//.test(ct)?ct:'');
+    if(!mime) throw new Error('not image');
+    const b=PB.fromData('data:'+mime+';base64,'+d64); if(!b||!b.size) throw new Error('empty'); return b; }
   const rr=await fetch(url); if(!rr.ok) throw httpErr(rr.status); const bl=await rr.blob(); if(!/^image\//.test(bl.type)) throw new Error('not image'); return bl;
 }
 // تحميل صورة خارجية وحفظها محليًا (للعمل بلا إنترنت). ترجع data: أو null

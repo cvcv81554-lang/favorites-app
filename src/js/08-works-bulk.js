@@ -70,7 +70,7 @@ function decorate(){
         <div class="v18chips">${STS.map(([k,n])=>`<span class="chip ${S.st===k?'on':''}" data-v18st="${k}">${n}</span>`).join('')}</div>
       </div></div>`);
   }
-  m.classList.toggle('v18selmode',S.on);
+  m.classList.toggle('v18selmode',S.on); m.classList.toggle('flt-open',!!wState.showFlt||!!S.st);
   m.querySelectorAll('[data-wkey]').forEach(c=>{ if(c.matches('.wkc,.wi')){ c.classList.add('v18c'); c.classList.toggle('v18on',S.keys.has(c.dataset.wkey)); } });
   m.querySelector('.v18bar')?.remove();
   if(S.on){

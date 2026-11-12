@@ -16,6 +16,7 @@ const inHeader=el=>!!(el&&el.closest&&el.closest('header.app'));
 const vis=el=>{ const r=el.getBoundingClientRect(); if(r.width<4||r.height<4) return false; const s=getComputedStyle(el); return s.visibility!=='hidden'&&s.display!=='none'&&s.pointerEvents!=='none'; };
 function scope(){ const lk=$$('lock'); if(lk&&lk.classList.contains('show')) return lk; const ask=$$('ovAsk'); if(ask&&ask.classList.contains('show')) return ask; const lb=$$('lbx'); if(lb&&lb.classList.contains('show')) return lb;
   const ov=[...document.querySelectorAll('.overlay.show')]; if(ov.length) return ov[ov.length-1]; return document.body; }
+const navOk=(sc,el)=>!!(sc&&sc.classList&&sc.classList.contains('page')&&el&&el.closest&&el.closest('nav.dock'));
 const inClosed=el=>{ let d=el.closest('details'); if(d&&el.tagName==='SUMMARY'&&el.parentElement===d) d=d.parentElement&&d.parentElement.closest('details'); for(;d;d=d.parentElement&&d.parentElement.closest('details')) if(!d.open) return true; return false; };
 /* المرشّحون: نافذة رأسية حول الشاشة أولًا (أسرع بكثير مع مئات البطاقات)، والمسح الكامل عند الحاجة فقط */
 const cands=full=>{ const sc=scope(), H=vh(), out=[]; const body=sc===document.body;
@@ -26,6 +27,7 @@ const cands=full=>{ const sc=scope(), H=vh(), out=[]; const body=sc===document.b
     if(el.parentElement&&el.parentElement.closest('.card')) continue;
     if(el.closest('[hidden],[inert]')||inClosed(el)||!vis(el)) continue;
     out.push(el); }
+  if(sc.classList&&sc.classList.contains('page')) for(const el of document.querySelectorAll('nav.dock .nb')) if(vis(el)) out.push(el);
   return out; };
 function mark(el){ document.querySelectorAll('.tvf').forEach(x=>x!==el&&x.classList.remove('tvf')); el.classList.add('tvf'); }
 let lastContent=null;
@@ -51,7 +53,7 @@ function gridNext(cur,k){ if(!cur.classList||!cur.classList.contains('card')||sc
   return null; }
 function firstFocus(){ const sc=scope(); if(sc===document.body){ const c=document.querySelector('.card'); if(c&&vis(c)) return c; }
   return cands()[0]||cands(true)[0]; }
-function ensureFocus(){ if(!on) return; const sc=scope(), a=document.activeElement; if(a&&a!==document.body&&sc.contains(a)&&vis(a)){ mark(a); return; } const f=firstFocus(); if(f) focusEl(f,false,scope()===document.body&&window.scrollY<5); }
+function ensureFocus(){ if(!on) return; const sc=scope(), a=document.activeElement; if(a&&a!==document.body&&(sc.contains(a)||navOk(sc,a))&&vis(a)){ mark(a); return; } const f=firstFocus(); if(f) focusEl(f,false,scope()===document.body&&window.scrollY<5); }
 function closeTop(){ const open=!!document.querySelector('.overlay.show,#lbx.show'); if(open) document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true})); return open; }
 /* رجوع: يغلق النافذة؛ وفي الرئيسية يعود للأعلى أولًا، وبعدها فقط يخرج من التطبيق */
 function backHome(){ if(document.querySelector('.overlay.show,#lbx.show')) return closeTop();
@@ -72,7 +74,7 @@ document.addEventListener('keydown',e=>{ if(!on||e.ctrlKey||e.metaKey||e.altKey)
     const now=performance.now(); if(e.repeat&&now-lastKey<70){ e.preventDefault(); return; } lastKey=now;
     let cur=document.activeElement;
     if(cur&&cur.classList&&cur.classList.contains('card')&&vis(cur)){ const gn=gridNext(cur,k); if(gn){ e.preventDefault(); e.stopImmediatePropagation(); focusEl(gn); return; } if(gn===undefined){ e.preventDefault(); e.stopImmediatePropagation(); return; } }
-    let list=cands(); if(!list.length) list=cands(true); if(!list.length) return; if(!cur||cur===document.body||!scope().contains(cur)||!vis(cur)){ e.preventDefault(); focusEl(firstFocus()); return; }
+    let list=cands(); if(!list.length) list=cands(true); if(!list.length) return; if(!cur||cur===document.body||!(scope().contains(cur)||navOk(scope(),cur))||!vis(cur)){ e.preventDefault(); focusEl(firstFocus()); return; }
     if(k==='ArrowDown'&&cur.tagName==='SUMMARY'&&cur.parentElement&&cur.parentElement.open){ const inn=list.find(x=>x!==cur&&cur.parentElement.contains(x)&&!(x.tagName==='SUMMARY'&&x.parentElement===cur.parentElement)); if(inn){ e.preventDefault(); e.stopImmediatePropagation(); focusEl(inn); return; } }
     let nx=pick(cur,k,list); if(!nx) nx=pick(cur,k,cands(true));
     if(nx){ e.preventDefault(); e.stopImmediatePropagation(); focusEl(nx); return; }

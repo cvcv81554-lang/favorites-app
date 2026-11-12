@@ -50,7 +50,7 @@ const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, de
 const page = await ctx.newPage(); const errors = [];
 page.on('pageerror', e => errors.push(String(e.message)));
 page.on('console', m => { if (m.type() === 'error' && !/net::ERR|404/.test(m.text())) errors.push(m.text()); });
-const boot = async () => { await page.goto(base); await page.waitForSelector('body.ready'); await page.waitForTimeout(500); };
+const boot = async () => { await page.goto(base); await page.waitForSelector('body.ready'); await page.evaluate(() => document.getElementById('nHome').click()); await page.waitForTimeout(500); };
 const count = pre => [...files.keys()].filter(k => k.startsWith(pre)).length;
 // كل الصور (الكاملة والمصغّرات) تُحمَّل فعلًا من روابطها
 const allLoad = () => page.evaluate(async () => { const urls = items.flatMap(i => [...(i.photos || []), i.thumb].filter(Boolean)); let bad = 0, w = 0;

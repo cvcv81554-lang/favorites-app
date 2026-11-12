@@ -27,7 +27,7 @@ async function newPage(viewport, dpr, query = '') {
   const page = await ctx.newPage(); const errors = [];
   page.on('pageerror', e => errors.push(String(e.message)));
   page.on('console', m => { if (m.type() === 'error' && !/favicon|net::ERR/.test(m.text())) errors.push(m.text()); });
-  await page.goto(base + query); await page.waitForSelector('body.ready');
+  await page.goto(base + query); await page.waitForSelector('body.ready'); await page.evaluate(() => document.getElementById('nHome').click());
   return { ctx, page, errors };
 }
 const shot = (page, name) => page.screenshot({ path: join(out, name + '.png') });
@@ -106,7 +106,20 @@ await phone.page.waitForFunction(() => items.find(i => i.id === 'sample-v4').thu
 ok('مصغّرة ناقصة وُلِّدت تلقائيًا', await phone.page.evaluate(() => !!items.find(i => i.id === 'sample-v4').thumb));
 
 // إعادة التحميل: البيانات باقية في IndexedDB
-await phone.page.reload(); await phone.page.waitForSelector('body.ready'); await phone.page.waitForSelector('.card'); await settle(phone.page, 900);
+await phone.page.reload(); await phone.page.waitForSelector('body.ready'); await settle(phone.page, 900);
+ok('الرئيسية تفتح أولًا وفيها مختارة اليوم والأرفف', await phone.page.evaluate(() => document.getElementById('ovHome').classList.contains('show') && !!document.querySelector('#mHome .spot') && document.querySelectorAll('#mHome .hs').length >= 4));
+await shot(phone.page, '00-phone-dashboard');
+await phone.page.evaluate(() => { document.getElementById('mHome').scrollTop = 700; }); await settle(phone.page, 400); await shot(phone.page, '00b-phone-dashboard-2');
+await phone.page.click('#nMore'); await settle(phone.page, 400); await shot(phone.page, '00c-phone-more');
+// المواجهة: التصويت يغيّر نقاط Elo ويُحفظ
+await phone.page.evaluate(() => Duel.open()); await settle(phone.page, 500); await shot(phone.page, '00d-phone-duel');
+await phone.page.click('#mDuel .dc[data-v="1"]'); await settle(phone.page, 300); await phone.page.click('#mDuel .dc[data-v="0"]'); await settle(phone.page, 300);
+ok('المواجهة تحدّث ترتيب Elo', await phone.page.evaluate(() => items.filter(i => i.duels > 0).length >= 2 && items.some(i => (i.elo || 1000) > 1000) && items.some(i => (i.elo || 1000) < 1000)));
+await phone.page.click('#mDuel [data-tab="board"]'); await settle(phone.page, 300); ok('لوحة الترتيب تعرض المتواجهات', await phone.page.locator('#mDuel .dboard .v17row').count() >= 2); await phone.page.keyboard.press('Escape');
+// المستويات: التوزيع التلقائي من التقييم
+await phone.page.evaluate(() => Tier.open()); await settle(phone.page, 400); await phone.page.click('#mTier [data-auto]'); await phone.page.click('#aOk'); await settle(phone.page, 500); await shot(phone.page, '00e-phone-tiers');
+ok('المستويات وُزّعت تلقائيًا', await phone.page.evaluate(() => items.filter(i => i.tier).length >= 10 && items.find(i => i.id === 'sample-1').tier === 'A')); await phone.page.keyboard.press('Escape');
+await phone.page.evaluate(() => document.getElementById('nHome').click()); await phone.page.waitForSelector('.card'); await settle(phone.page, 500);
 ok('البيانات باقية بعد إعادة التشغيل', await phone.page.evaluate(() => items.length) === 17);
 await shot(phone.page, '02-phone-home');
 
@@ -123,9 +136,9 @@ await P.evaluate(() => closeOv('ovForm')); await settle(P);
 await P.click('#nWorks'); await settle(P, 800); await shot(P, '07-phone-works');
 ok('مركز الأعمال يعرض بطاقات', await P.locator('#mWorks .wkc').count() > 3);
 await P.locator('#mWorks .wkc .wk-t').first().click(); await settle(P, 600); await shot(P, '08-phone-work-sheet'); await P.keyboard.press('Escape'); await settle(P);
-await P.click('#bStats'); await settle(P, 1300); await shot(P, '09-phone-stats');
+await P.evaluate(() => document.getElementById('bStats').click()); await settle(P, 1300); await shot(P, '09-phone-stats');
 await P.evaluate(() => { document.getElementById('mStats').scrollTop = 900; }); await settle(P); await shot(P, '10-phone-stats-2');
-await P.click('#nLists'); await settle(P, 700); await shot(P, '11-phone-lists');
+await P.evaluate(() => document.getElementById('nLists').click()); await settle(P, 700); await shot(P, '11-phone-lists');
 await P.click('#nRecs'); await settle(P, 700); await shot(P, '12-phone-recs');
 await P.click('#nHome'); await settle(P);
 await P.click('#bSet'); await settle(P, 600); await shot(P, '13-phone-settings'); await P.keyboard.press('Escape'); await settle(P);
@@ -158,7 +171,7 @@ await phone.ctx.close();
 // ---------- 4) التلفاز 1920×1080 بأسهم الكيبورد ----------
 for (const [tag, vp, dpr] of [['tv1080', { width: 1920, height: 1080 }, 1], ['tv540', { width: 960, height: 540 }, 2]]) {
   const tv = await newPage(vp, dpr, '?tv=1'); const T = tv.page;
-  await importSample(T); await T.waitForSelector('.card'); await settle(T, 1200);
+  await importSample(T); await settle(T, 2600); await T.waitForSelector('body.ready'); await T.evaluate(() => document.getElementById('nHome').click()); await T.waitForSelector('.card'); await settle(T, 700);
   ok(tag + ': وضع التلفاز مفعّل', await T.evaluate(() => document.documentElement.classList.contains('tv')));
   await T.keyboard.press('ArrowDown'); await settle(T, 300);
   const f0 = await T.evaluate(() => { const a = document.activeElement; return a && a.classList.contains('card') ? a.dataset.id : (a ? a.tagName + '#' + a.id : ''); });
@@ -167,13 +180,21 @@ for (const [tag, vp, dpr] of [['tv1080', { width: 1920, height: 1080 }, 1], ['tv
   ok(tag + ': الأسهم تنقل التركيز بين البطاقات', !!f1 && f1 !== f0, f0 + ' → ' + f1);
   ok(tag + ': حلقة التركيز ظاهرة', await T.evaluate(() => { const a = document.activeElement; return a.classList.contains('tvf') && parseFloat(getComputedStyle(a).outlineWidth) >= 3; }));
   await shot(T, tag + '-01-home-focus');
+  // الرئيسية على التلفاز: التنقل بين الأرفف والوصول لشريط التنقل من داخل الصفحة
+  await T.evaluate(() => { document.getElementById('nDash').focus(); document.getElementById('nDash').click(); }); await settle(T, 600);
+  await T.keyboard.press('ArrowLeft'); await T.keyboard.press('ArrowDown'); await T.keyboard.press('ArrowDown'); await T.keyboard.press('ArrowLeft'); await settle(T, 300);
+  ok(tag + ': تنقل داخل الرئيسية', await T.evaluate(() => !!document.activeElement.closest('#ovHome')), await T.evaluate(() => document.activeElement.className));
+  await shot(T, tag + '-00-dashboard');
+  for (let k = 0; k < 12; k++) await T.keyboard.press('ArrowRight'); await settle(T, 250);
+  ok(tag + ': شريط التنقل في المتناول من داخل الصفحة', await T.evaluate(() => !!document.activeElement.closest('nav.dock')), await T.evaluate(() => document.activeElement.className));
+  await T.evaluate(() => document.getElementById('nHome').click()); await settle(T, 400); await T.evaluate(id => { const c = document.querySelector('.card[data-id="' + id + '"]'); if (c) { c.tabIndex = -1; c.focus(); c.classList.add('tvf'); } }, f1);
   await T.keyboard.press('Enter'); await settle(T, 900);
   ok(tag + ': OK يفتح الملف', await T.evaluate(() => document.getElementById('ovDetail').classList.contains('show')));
   await shot(T, tag + '-02-detail');
   await T.keyboard.press('ArrowDown'); await T.keyboard.press('ArrowDown'); await settle(T, 300);
   ok(tag + ': التركيز داخل النافذة المفتوحة', await T.evaluate(() => !!document.activeElement.closest('#ovDetail')));
   await T.keyboard.press('Escape'); await settle(T, 500);
-  ok(tag + ': رجوع يغلق النافذة ويعيد التركيز للبطاقة', await T.evaluate(id => !document.getElementById('ovDetail').classList.contains('show') && document.activeElement.dataset.id === id, f1));
+  ok(tag + ': رجوع يغلق النافذة ويعيد التركيز للبطاقة', await T.evaluate(id => !document.getElementById('ovDetail').classList.contains('show') && document.activeElement.dataset.id === id, f1), await T.evaluate(() => { const a = document.activeElement; return a.tagName + '.' + a.className + '#' + (a.dataset.id || a.id) + ' ov=' + [...document.querySelectorAll('.overlay.show')].map(o => o.id).join(','); }) + ' want=' + f1);
   // إلى شريط التنقل ثم الأعمال
   for (let k = 0; k < 8; k++) await T.keyboard.press('ArrowRight'); await settle(T, 250);
   const inNav = await T.evaluate(() => !!document.activeElement.closest('nav.dock'));

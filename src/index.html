@@ -14,6 +14,9 @@
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <linearGradient id="mg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f0b59a"/><stop offset=".55" stop-color="#d98f6c"/><stop offset="1" stop-color="#d8788f"/></linearGradient>
+<linearGradient id="bgv" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3d2b62"/><stop offset="1" stop-color="#150f22"/></linearGradient>
+<symbol id="logo" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="url(#bgv)"/><path d="M32 53C13 39.5 9 30 9 22.5 9 14.8 14.8 10 21 10c4.6 0 8.6 2.6 11 7 2.400-4.400 6.400-7 11-7 6.200 0 12 4.800 12 12.500 0 7.500-4 17-23 30.500z" fill="url(#mg)"/><path transform="translate(18.9 14.6) scale(.41)" d="M32 13l5.6 11.6 12.6 1.8-9.1 8.9 2.1 12.6L32 42l-11.2 5.9 2.1-12.6-9.1-8.9 12.6-1.8z" fill="#fff"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></symbol>
 <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></symbol>
 <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></symbol>
 <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
@@ -42,7 +45,7 @@
 
 <header class="app">
   <div class="bar">
-    <div class="brand"><svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="18" fill="url(#mg)"/><path d="M32 13l5.6 11.6 12.6 1.8-9.1 8.9 2.1 12.6L32 42l-11.2 5.9 2.1-12.6-9.1-8.9 12.6-1.8z" fill="#fff" fill-opacity=".96"/></svg><div class="logo">المفضلة<small id="cntAll"></small></div></div>
+    <div class="brand"><svg class="mark"><use href="#logo"/></svg><div class="logo">المفضلة<small id="cntAll"></small></div></div>
     <div class="ibtns">
       <button class="ib" id="bShow" title="عرض شرائح" aria-label="عرض شرائح بملء الشاشة"><svg class="ic"><use href="#i-slides"/></svg></button>
       <button class="ib" id="bRandom" title="سحب عشوائي" aria-label="سحب عشوائي"><svg class="ic"><use href="#i-shuffle"/></svg></button>
@@ -69,18 +72,38 @@
 <main><button type="button" class="recbar" id="recBar" hidden><span class="rb-ic"><svg class="ic"><use href="#i-bulb"/></svg></span><span class="rb-t"><b>اقتراحات تناسب ذوقك</b><small id="recBarSub"></small></span><em id="recBarN" hidden></em><svg class="ic chv"><use href="#i-chev"/></svg></button><div class="grid" id="grid"></div><div id="empty" class="empty" style="display:none"></div></main>
 
 <nav class="dock" aria-label="التنقل">
-  <button class="nb on" id="nHome"><svg class="ic"><use href="#i-home"/></svg><span>الرئيسية</span></button>
+  <button class="nb" id="nDash"><svg class="ic"><use href="#i-home"/></svg><span>الرئيسية</span></button>
+  <button class="nb on" id="nHome"><svg class="ic"><use href="#i-grid"/></svg><span>المكتبة</span></button>
   <button class="nb" id="nWorks"><svg class="ic"><use href="#i-film"/></svg><span>الأعمال</span><i id="wDot" class="wdot" style="display:none"></i></button>
   <button class="nb" id="nRecs"><svg class="ic"><use href="#i-bulb"/></svg><span>اكتشف</span></button>
-  <button class="nb" id="nLists"><svg class="ic"><use href="#i-folder"/></svg><span>القوائم</span></button>
-  <button class="nb" id="bStats"><svg class="ic"><use href="#i-chart"/></svg><span>إحصائيات</span></button>
+  <button class="nb" id="nMore"><svg class="ic"><use href="#i-more"/></svg><span>المزيد</span></button>
 </nav>
 <button class="fab" id="bAdd" aria-label="إضافة ممثلة"><svg class="ic"><use href="#i-plus"/></svg></button>
 
+<div class="overlay page" id="ovHome"><div class="modal" id="mHome"></div></div>
+<div class="overlay page" id="ovMore"><div class="modal" id="mMore">
+  <h2>المزيد</h2>
+  <div class="mgrid">
+    <button type="button" class="mt" id="nLists"><span>📂</span><b>القوائم</b><small>قوائمك والقوائم الذكية</small></button>
+    <button type="button" class="mt" id="bStats"><span>📊</span><b>الإحصائيات</b><small>أرقام مكتبتك وذوقك</small></button>
+    <button type="button" class="mt" data-tool="duel"><span>⚔️</span><b>المواجهة</b><small>أيهما تفضّل؟ ترتيب حقيقي لذوقك</small></button>
+    <button type="button" class="mt" data-tool="tier"><span>🏆</span><b>المستويات</b><small>رتّبهن من S إلى D</small></button>
+    <button type="button" class="mt" data-tool="bday"><span>🎂</span><b>أعياد الميلاد</b><small>القادمة بالترتيب</small></button>
+    <button type="button" class="mt" data-tool="random"><span>🎲</span><b>سحب عشوائي</b><small>ممثلة وعمل للمشاهدة</small></button>
+    <button type="button" class="mt" data-tool="show"><span>🖼️</span><b>عرض شرائح</b><small>معرض بملء الشاشة</small></button>
+    <button type="button" class="mt" data-tool="compare"><span>⚖️</span><b>مقارنة</b><small>ممثلتان جنبًا إلى جنب</small></button>
+    <button type="button" class="mt" data-tool="tags"><span>🏷️</span><b>الوسوم</b><small>إعادة تسمية ودمج وحذف</small></button>
+    <button type="button" class="mt" data-tool="blur"><span>🙈</span><b>تمويه الصور</b><small>إخفاء سريع</small></button>
+    <button type="button" class="mt" data-tool="lock"><span>🔒</span><b>قفل الآن</b><small>برمز PIN</small></button>
+    <button type="button" class="mt" data-tool="settings"><span>⚙️</span><b>الإعدادات</b><small>المظهر، النسخ، المصادر</small></button>
+  </div>
+</div></div>
 <div class="overlay page" id="ovWorks"><div class="modal" id="mWorks"></div></div>
 <div class="overlay page" id="ovStats"><div class="modal" id="mStats"></div></div>
 <div class="overlay page" id="ovRecs"><div class="modal" id="mRecs"></div></div>
 <div class="overlay page" id="ovLists"><div class="modal" id="mLists"></div></div>
+<div class="overlay full" id="ovDuel"><div class="modal" id="mDuel"></div></div>
+<div class="overlay full" id="ovTier"><div class="modal" id="mTier"></div></div>
 <div class="overlay full" id="ovDetail"><div class="modal" id="mDetail"></div></div>
 <div class="overlay full" id="ovForm"><div class="modal" id="mForm"></div></div>
 <div class="overlay" id="ovPick"><div class="modal" id="mPick"></div></div>
@@ -169,13 +192,13 @@
 </div></div>
 
 <div id="lock"><div class="lockbox">
-  <svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="18" fill="url(#mg)"/><path d="M32 13l5.6 11.6 12.6 1.8-9.1 8.9 2.1 12.6L32 42l-11.2 5.9 2.1-12.6-9.1-8.9 12.6-1.8z" fill="#fff" fill-opacity=".96"/></svg>
+  <svg class="mark"><use href="#logo"/></svg>
   <div class="big">أدخل الرمز</div>
   <div id="lockDots" aria-hidden="true"></div>
   <div id="lockMsg" class="src" role="status"></div>
   <div id="lockPad"><button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button data-k="del" aria-label="حذف">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok" aria-label="فتح">✓</button></div>
 </div></div>
-<div id="cover" aria-hidden="true"><svg class="mark" viewBox="0 0 64 64"><rect width="64" height="64" rx="18" fill="url(#mg)"/><path d="M32 13l5.6 11.6 12.6 1.8-9.1 8.9 2.1 12.6L32 42l-11.2 5.9 2.1-12.6-9.1-8.9 12.6-1.8z" fill="#fff" fill-opacity=".96"/></svg></div>
+<div id="cover" aria-hidden="true"><svg class="mark"><use href="#logo"/></svg></div>
 
 <div id="lbx" aria-hidden="true">
   <div class="lstage"><img class="la" alt=""><img class="lb" alt=""></div>

@@ -36,7 +36,7 @@ mkdirSync(join(res, 'mipmap-anydpi-v26'), { recursive: true });
 const adaptive = '<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n    <background android:drawable="@drawable/ic_launcher_bg"/>\n    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>\n</adaptive-icon>\n';
 writeFileSync(join(res, 'mipmap-anydpi-v26', 'ic_launcher.xml'), adaptive); writeFileSync(join(res, 'mipmap-anydpi-v26', 'ic_launcher_round.xml'), adaptive);
 mkdirSync(join(res, 'drawable'), { recursive: true });
-writeFileSync(join(res, 'drawable', 'ic_launcher_bg.xml'), '<?xml version="1.0" encoding="utf-8"?>\n<shape xmlns:android="http://schemas.android.com/apk/res/android">\n    <gradient android:angle="315" android:startColor="#f0b59a" android:centerColor="#d98f6c" android:endColor="#d8788f"/>\n</shape>\n');
+writeFileSync(join(res, 'drawable', 'ic_launcher_bg.xml'), '<?xml version="1.0" encoding="utf-8"?>\n<shape xmlns:android="http://schemas.android.com/apk/res/android">\n    <gradient android:angle="315" android:startColor="#3d2b62" android:endColor="#150f22"/>\n</shape>\n');
 // شاشة البداية: لون ثابت بدل صورة تتمدد
 writeFileSync(join(res, 'drawable', 'splash_bg.xml'), `<?xml version="1.0" encoding="utf-8"?>\n<shape xmlns:android="http://schemas.android.com/apk/res/android">\n    <solid android:color="${BG}"/>\n</shape>\n`);
 edit(join(res, 'values', 'styles.xml'), s => s.replace(/@drawable\/splash\b/g, '@drawable/splash_bg'));

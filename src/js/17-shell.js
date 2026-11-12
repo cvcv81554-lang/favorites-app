@@ -16,8 +16,9 @@ async function localizeImage(url){ try{ const b=await fetchImage(url); return aw
 const busy={ show(t){ $('busyT').textContent=t||''; $('busy').classList.add('show'); }, hide(){ $('busy').classList.remove('show'); } };
 
 (function(){
-  const PAGES=['ovWorks','ovStats','ovRecs','ovLists'];
-  const NAV={ovWorks:'nWorks',ovStats:'bStats',ovRecs:'nRecs',ovLists:'nLists'};
+  const PAGES=['ovHome','ovWorks','ovStats','ovRecs','ovLists','ovMore'];
+  const NAV={ovHome:'nDash',ovWorks:'nWorks',ovRecs:'nRecs',ovMore:'nMore',ovStats:'nMore',ovLists:'nMore'};
+  const NBS=['nDash','nHome','nWorks','nRecs','nMore'];
   const ovs=[...document.querySelectorAll('.overlay')];
   const shown=()=>ovs.filter(o=>o.classList.contains('show'));
   const zOf=o=>+getComputedStyle(o).zIndex||0;
@@ -25,16 +26,18 @@ const busy={ show(t){ $('busyT').textContent=t||''; $('busy').classList.add('sho
   window.topOverlay=top;
 
   // الصفحات الأربع تعمل كتبويبات: فتح واحدة يغلق الأخريات، وشريط التنقل يبقى ظاهرًا
-  const syncNav=()=>{ const open=PAGES.find(id=>$(id).classList.contains('show'));
-    Object.entries(NAV).forEach(([ov,nb])=>$(nb).classList.toggle('on',ov===open));
-    $('nHome').classList.toggle('on',!open); document.body.classList.toggle('inpage',!!open); };
+  const syncNav=()=>{ const open=PAGES.find(id=>$(id).classList.contains('show')), on=open?NAV[open]:'nHome';
+    NBS.forEach(id=>$(id).classList.toggle('on',id===on)); document.body.classList.toggle('inpage',!!open); };
+  // الوحدات تعيد رسم المكتبة وتلمس حالة الأزرار؛ نعيد المزامنة بعدها
+  { const _r=render; render=function(){ const r=_r.apply(this,arguments); syncNav(); return r; }; }
   const mo=new MutationObserver(ms=>{ ms.forEach(m=>{ const el=m.target; if(el.classList.contains('show')&&PAGES.includes(el.id)) PAGES.forEach(id=>{ if(id!==el.id) $(id).classList.remove('show'); }); });
     syncNav(); document.body.classList.toggle('modal-open',shown().some(o=>!PAGES.includes(o.id))); });
   ovs.forEach(o=>mo.observe(o,{attributes:true,attributeFilter:['class']}));
   $('nRecs').onclick=()=>{ if(window.openRecs) window.openRecs(); };
-  $('nHome').addEventListener('click',()=>closeOv('ovRecs'));
+  $('nHome').addEventListener('click',()=>{ closeOv('ovRecs'); closeOv('ovHome'); closeOv('ovMore');
+    if(document.documentElement.classList.contains('tv')) setTimeout(()=>{ const c=document.querySelector('#grid .card'); if(c){ c.tabIndex=-1; try{ c.focus({preventScroll:true}); }catch{} } },120); });
   // الضغط على تبويب مفتوح يعيده لأعلاه
-  document.querySelector('nav.dock').addEventListener('click',e=>{ const b=e.target.closest('.nb'); if(!b) return; const ov=Object.keys(NAV).find(k=>NAV[k]===b.id); if(ov&&$(ov).classList.contains('show')){ const m=$(ov).querySelector('.modal'); if(m) m.scrollTop=0; } },true);
+  document.querySelector('nav.dock').addEventListener('click',e=>{ const b=e.target.closest('.nb'); if(!b) return; const ov=Object.keys(NAV).find(k=>NAV[k]===b.id&&$(k).classList.contains('show')); if(ov){ const m=$(ov).querySelector('.modal'); if(m) m.scrollTop=0; } },true);
 
   $('bSetClose').onclick=()=>closeOv('ovSet');
   document.querySelectorAll('[data-ksave]').forEach(b=>b.onclick=()=>$('kSave').click());
@@ -48,10 +51,13 @@ const busy={ show(t){ $('busyT').textContent=t||''; $('busy').classList.add('sho
     if($('lock').classList.contains('show')) return true;
     if(ask.cancel){ ask.cancel(); return true; }
     const t=top();
+    if(t&&t.id==='ovHome'){ const m=$('mHome'); if(m.scrollTop>200){ m.scrollTop=0; return true; } return false; }
+    if(t&&PAGES.includes(t.id)){ Home.open(); return true; }
     if(t){ if(t.id==='ovForm'&&$('fCancel')) $('fCancel').click(); else t.classList.remove('show'); return true; }
     if(document.body.classList.contains('selmode')){ const x=document.querySelector('#selBar [data-sa="x"]'); if(x){ x.click(); return true; } }
     if(window.scrollY>260){ window.scrollTo({top:0,behavior:REDUCED?'auto':'smooth'}); return true; }
-    return false; }
+    Home.open(); return true; }
+  const atRoot=()=>{ const t=top(); return !!t&&t.id==='ovHome'&&$('mHome').scrollTop<=200&&!ask.cancel&&!(typeof Gallery!=='undefined'&&Gallery.isOpen())&&!$('lock').classList.contains('show'); };
   window.goBack=goBack;
   document.addEventListener('keydown',e=>{
     if(e.key==='Escape'){ if(goBack()) e.preventDefault(); return; }
@@ -59,7 +65,7 @@ const busy={ show(t){ $('busyT').textContent=t||''; $('busy').classList.add('sho
     if(e.key==='b'||e.key==='B'||e.key==='ب') $('bBlur').click(); });
   // زر الرجوع في أندرويد/التلفاز: يغلق النافذة العلوية أو يرجع خطوة، وعند الرئيسية يصغّر التطبيق
   if(IS_NATIVE){ try{ NATIVE.App.addListener('backButton',()=>{
-    const had=!!(top()||ask.cancel||(typeof Gallery!=='undefined'&&Gallery.isOpen())||document.body.classList.contains('selmode')||window.scrollY>260||$('lock').classList.contains('show'));
+    const had=!atRoot();
     document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
     if(!had){ try{ NATIVE.App.minimizeApp(); }catch{ try{ NATIVE.App.exitApp(); }catch{} } } }); }catch(e){ console.warn('back',e); } }
   syncNav();

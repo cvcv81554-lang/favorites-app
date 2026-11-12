@@ -1,0 +1,11 @@
+{
+  "appId": "com.favlib.app",
+  "appName": "Favorites",
+  "webDir": "www",
+  "backgroundColor": "#15101f",
+  "plugins": {
+    "CapacitorHttp": { "enabled": true }
+  },
+  "android": { "backgroundColor": "#15101f" },
+  "ios": { "backgroundColor": "#15101f", "contentInset": "never" }
+}

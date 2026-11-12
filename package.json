@@ -1,0 +1,27 @@
+{
+  "name": "favorites-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Personal favorites library (Capacitor: iOS + Android / Android TV)",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "serve": "node scripts/serve.mjs",
+    "test": "node tests/run.mjs",
+    "android:prepare": "npm run build && (npx cap add android || true) && node scripts/patch-android.mjs && npx cap sync android",
+    "ios:prepare": "npm run build && (npx cap add ios || true) && node scripts/patch-ios.mjs && npx cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/core": "^7.4.0",
+    "@capacitor/filesystem": "^7.0.0",
+    "@capacitor/ios": "^7.4.0",
+    "@capacitor/share": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.0",
+    "esbuild": "^0.25.0",
+    "playwright-core": "^1.65.0"
+  }
+}

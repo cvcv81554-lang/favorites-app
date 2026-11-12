@@ -1,0 +1,90 @@
+# Favorites — دليل مختصر
+
+تطبيق مكتبة مفضّلات شخصي (آيفون + أندرويد + Android TV) مبني بـ Capacitor 7 و JavaScript عادي.
+بياناتك تبقى على جهازك فقط؛ لا يوجد في المستودع أي بيانات أو صور حقيقية.
+
+## 1) النشر أول مرة (ويندوز / PowerShell)
+
+افتح PowerShell داخل مجلد `favorites-app` ونفّذ بالترتيب:
+
+```
+winget install GitHub.cli
+```
+أغلق النافذة وافتحها من جديد، ثم:
+```
+gh auth login
+```
+(اختر GitHub.com ثم HTTPS ثم Login with a web browser)
+```
+powershell -ExecutionPolicy Bypass -File scripts\publish.ps1
+```
+
+السكربت ينشئ المستودع، يولّد مفتاح التوقيع مرة واحدة، يحفظه كسرّ في GitHub، يرفع المشروع، ويطبع لك رابطَي التحميل.
+البناء يأخذ 10–20 دقيقة وتتابعه من تبويب **Actions** في صفحة المستودع.
+
+> **مهم:** مجلد `signing\` فيه مفتاح توقيع الأندرويد. انسخه إلى مكان آمن. لو ضاع لن تُثبَّت التحديثات فوق النسخة القديمة.
+
+## 2) التثبيت
+
+روابط ثابتة لا تتغير (ضع اسم حسابك مكان `USER`):
+
+- **APK:** `https://github.com/USER/favorites-app/releases/download/latest/Favorites.apk`
+- **IPA:** `https://github.com/USER/favorites-app/releases/download/latest/Favorites.ipa`
+
+| الجهاز | الطريقة |
+|---|---|
+| آيفون | في ESign أو Scarlet: استورد من رابط الـ IPA ثم وقّع بشهادتك وثبّت |
+| Android TV | في تطبيق Downloader اكتب رابط الـ APK ثم ثبّت. يظهر التطبيق في الشاشة الرئيسية ويعمل بالريموت |
+| جوال أندرويد | افتح رابط الـ APK نفسه من المتصفح وثبّت |
+
+## 3) نقل بياناتك من التطبيق القديم
+
+1. في التطبيق القديم: الإعدادات ← تصدير (ملف `vkte-backup-….json`).
+2. في الجديد: الإعدادات ← النسخ الاحتياطي ← **استيراد من ملف**.
+3. على التلفاز (لا يوجد منتقي ملفات): استخدم **استيراد من رابط**، أو ضع الملف في `Documents/FavoritesBackup/import` ثم **استيراد من مجلد النسخ**.
+
+## 4) التحديث
+
+عدّل ما تريد ثم:
+```
+git add -A
+git commit -m "update"
+git push
+```
+يُبنى الإصدار الجديد تلقائيًا بنفس الرابطين. ثبّته فوق القديم وبياناتك تبقى.
+
+## 5) البناء محليًا (اختياري)
+
+```
+npm install
+npm run build
+npm run serve
+```
+ثم افتح `http://127.0.0.1:5173/` (وأضف `?tv=1` لتجربة وضع التلفاز بأسهم الكيبورد).
+
+APK محلي (يحتاج JDK 21 و Android SDK 35):
+```
+powershell -ExecutionPolicy Bypass -File scripts\local-apk.ps1
+```
+الناتج: `dist\Favorites.apk`
+
+الاختبارات الآلية (تحتاج Edge أو Chrome): `npm test` — تصنع ملف نسخة تجريبيًا بصور مجرّدة، تستورده، وتصوّر الشاشات في `tests\out`.
+
+## 6) أين بياناتي؟
+
+- داخل التطبيق (IndexedDB)، والصور مخزّنة كملفات Blob منفصلة.
+- نسخة تلقائية في `Documents/FavoritesBackup` (على الآيفون تظهر في تطبيق «الملفات»). عند تثبيت جديد بقاعدة فارغة تُستعاد تلقائيًا إن وُجد المجلد.
+- مفاتيح الـ API ورمز القفل تبقى على الجهاز ولا تدخل أي نسخة احتياطية.
+
+## بنية المشروع
+
+```
+src/index.html, src/app.css     الواجهة والتصميم
+src/js/NN-*.js                  وحدات التطبيق (تُدمج بالترتيب في www/app.js)
+src/native/index.js             إضافات Capacitor (تُحزَّم بـ esbuild)
+scripts/build.mjs               البناء
+scripts/patch-android.mjs       تعديل مشروع أندرويد المولَّد (TV، أيقونات، إضافة Shell)
+scripts/patch-ios.mjs           تعديل مشروع iOS المولَّد (الملفات، الأيقونة، تغطية الخلفية)
+.github/workflows/build.yml     البناء والنشر التلقائي
+```
+مجلدا `android/` و `ios/` لا يُحفظان في المستودع؛ يولَّدان في كل بناء بـ `npx cap add` ثم يُعدَّلان بالسكربتين.

@@ -24,7 +24,7 @@ const MOCK = `(() => {
     Capacitor: { convertFileSrc: u => u.replace('file:///mock/', location.origin + '/__file/') },
     CapacitorHttp: { get: async () => ({ status: 404, data: '' }) }, App: { addListener: () => {}, minimizeApp: () => { window.__minimized = (window.__minimized || 0) + 1; }, getLaunchUrl: async () => null }, Share: { share: async () => {} },
     Shell: { info: async () => ({ tv: true }), secure: async () => {}, addListener: (n, f) => { L[n] = f; }, startServer: async a => { window.__srv = a; return { ip: '192.168.1.50', port: 8765 }; },
-      address: async () => ({ ip: '192.168.1.50', port: 8765 }), setToken: async a => { window.__srv.token = a.token; }, respond: async () => {} } };
+      address: async () => ({ ip: '192.168.1.50', port: 8765 }), voice: async () => { window.__voiceCalled = true; return { text: 'نموذج 2' }; }, setToken: async a => { window.__srv.token = a.token; }, respond: async () => {} } };
 })();`;
 const NATIVE_JS = readFileSync(join(www, 'native.js'), 'utf8');
 const server = http.createServer(async (q, r) => {
@@ -151,21 +151,108 @@ await Ph.evaluate(() => Sync.syncNow(false)); await settle(T, 300);
 ok('تعارض حقيقي: التعديل الأحدث يفوز على الجهازين', await T.evaluate(() => items.find(x => x.id === 'sample-3').rating === 4.5) && await Ph.evaluate(() => items.find(x => x.id === 'sample-3').rating === 4.5));
 // المكتبة والأعمال والبحث والإعدادات عبر القائمة
 const goNav = async k => { await T.evaluate(k => { const b = document.querySelector(`#tv .tv-nav [data-go="${k}"]`); b.focus(); }, k); await T.keyboard.press('Enter'); await settle(T, 700); };
+const visible = () => T.evaluate(() => { const a = document.activeElement; if (!a || !document.getElementById('tv').contains(a)) return 'outside:' + (a && a.tagName); const r = a.getBoundingClientRect(); const L = a.closest('#tvLayer'); const box = L ? { top: 0, bottom: innerHeight } : (a.closest('.tv-main') || a.closest('.tv-nav')).getBoundingClientRect(); return r.width > 2 && r.top >= box.top - 2 && r.bottom <= box.bottom + 2 && r.left >= -2 && r.right <= innerWidth + 2 ? 'ok' : 'off:' + (a.dataset.k || a.tagName) + ' ' + Math.round(r.top) + '..' + Math.round(r.bottom) + ' x' + Math.round(r.left) + '..' + Math.round(r.right) + ' in ' + Math.round(box.top) + '..' + Math.round(box.bottom); });
+// القائمة الجانبية: كل العناصر ظاهرة وقابلة للوصول بالأسهم
+await T.evaluate(() => document.querySelector('#tv .tv-nav .f').focus()); const navSeen = [];
+for (let k = 0; k < 12; k++) { navSeen.push(await T.evaluate(() => { const a = document.activeElement, r = a.getBoundingClientRect(); return r.bottom <= innerHeight && r.top >= 0 ? a.dataset.go : 'OFF'; })); await T.keyboard.press('ArrowDown'); await settle(T, 60); }
+ok('القائمة الجانبية: كل الأقسام العشرة ظاهرة ويُوصل إليها بالأسهم', new Set(navSeen.filter(x => x !== 'OFF')).size === 10 && !navSeen.includes('OFF'), navSeen.join(','));
 await goNav('lib'); await T.screenshot({ path: join(out, 'tv-06-library.png') });
 ok('المكتبة: شبكة كل الممثلات', await T.evaluate(() => document.querySelectorAll('#tv .tv-grid .tvp').length === items.length));
 await T.keyboard.press('ArrowDown'); await T.keyboard.press('ArrowDown'); await settle(T, 300); const g0 = await act(T); await T.keyboard.press('ArrowDown'); await settle(T, 300);
 ok('أسفل داخل الشبكة ينزل صفًّا', (await act(T)) !== g0 && /^p:/.test(await act(T)), g0 + ' → ' + await act(T));
+ok('شريط المعلومات يعرض الممثلة المحددة وموضعها', await T.evaluate(() => { const a = document.activeElement, i = items.find(x => x.id === a.dataset.p); const t = document.getElementById('tvInfo').textContent; return !!i && t.includes(i.name) && / \/ \d+/.test(t); }), await T.evaluate(() => document.getElementById('tvInfo').textContent.slice(0, 80)));
+// رجوع من صفحة الممثلة يعيد التركيز لنفس البطاقة في الشبكة
+const libK = await act(T); await T.keyboard.press('Enter'); await settle(T, 600);
+ok('OK في الشبكة يفتح صفحة الممثلة', await T.evaluate(() => TVApp.page === 'person'));
+await T.keyboard.press('Escape'); await settle(T, 600);
+ok('رجوع من التفاصيل: التركيز على نفس البطاقة', (await act(T)) === libK && await T.evaluate(() => TVApp.page === 'lib'), libK + ' → ' + await act(T));
+// ضغطة مطوّلة على OK = خيارات سريعة → إضافة/إزالة من المفضلة بالريموت
+const favB = await T.evaluate(() => { const i = items.find(x => x.id === document.activeElement.dataset.p); return !!i.fav; });
+await T.keyboard.down('Enter'); await T.waitForTimeout(750); await T.keyboard.up('Enter'); await settle(T, 300);
+ok('ضغطة مطوّلة على OK تفتح الخيارات السريعة', await T.evaluate(() => !document.getElementById('tvLayer').hidden && !!document.querySelector('#tvLayer [data-qa="fav"]') && TVApp.page === 'lib'));
+await T.screenshot({ path: join(out, 'tv-13-quick.png') });
+await T.evaluate(() => document.querySelector('#tvLayer [data-qa="fav"]').focus()); await T.keyboard.press('Enter'); await settle(T, 900);
+ok('المفضلة تتبدل من الخيارات السريعة', await T.evaluate(k => { const i = items.find(x => 'p:' + x.id === k); return !!i.fav; }, libK) !== favB && await T.evaluate(() => document.getElementById('tvLayer').hidden));
+ok('بعد إغلاق الخيارات يبقى التركيز على البطاقة', (await act(T)) === libK, await act(T));
+// قائمة منسدلة للقوائم والوسوم + الترتيب
+await T.evaluate(() => document.querySelector('#tv [data-act="lfx"]').focus()); await T.keyboard.press('Enter'); await settle(T, 300);
+ok('«القوائم والوسوم» تفتح نافذة اختيار', await T.evaluate(() => document.querySelectorAll('#tvLayer [data-lf]').length >= 2));
+await T.screenshot({ path: join(out, 'tv-14-filter.png') });
+const lf = await T.evaluate(() => { const b = document.querySelector('#tvLayer [data-lf^="L:"]') || document.querySelector('#tvLayer [data-lf^="T:"]'); b.focus(); return b.dataset.lf; }); await T.keyboard.press('Enter'); await settle(T, 500);
+ok('اختيار قائمة يرشّح الشبكة', await T.evaluate(lf => { const n = document.querySelectorAll('#tv .tv-grid .tvp').length; const want = items.filter(i => lf.startsWith('L:') ? (i.lists || []).includes(lf.slice(2)) : (i.tags || []).includes(lf.slice(2))).length; return n === want && n < items.length && document.getElementById('tvLayer').hidden; }, lf), lf);
+await T.evaluate(() => document.querySelector('#tv [data-act="lsx"]').focus()); await T.keyboard.press('Enter'); await settle(T, 300);
+await T.evaluate(() => document.querySelector('#tvLayer [data-ls="name"]').focus()); await T.keyboard.press('Enter'); await settle(T, 500);
+ok('الترتيب بالاسم من النافذة', await T.evaluate(() => TVApp.args.s === 'name' && /الاسم/.test(document.querySelector('#tv [data-act="lsx"]').textContent)));
+// الأعمال
 await goNav('works'); await T.screenshot({ path: join(out, 'tv-07-works.png') });
 ok('الأعمال: تبويبات + شبكة', await T.evaluate(() => document.querySelectorAll('#tv [data-wt]').length === 6 && document.querySelectorAll('#tv .tv-grid .tvw').length > 5));
 await T.evaluate(() => document.querySelector('#tv [data-wt="seen"]').focus()); await T.keyboard.press('Enter'); await settle(T, 500);
 ok('تبويب «شاهدتها» يعرض المشاهَد فقط', await T.evaluate(() => [...document.querySelectorAll('#tv .tv-grid .tvw')].every(e => e.classList.contains('seen'))));
-await goNav('search'); await T.evaluate(() => document.getElementById('tvQ').focus()); await T.keyboard.type('نموذج 1'); await settle(T, 600);
-ok('البحث يعرض النتائج أثناء الكتابة', await T.evaluate(() => document.querySelectorAll('#tvRes .tvp').length >= 5));
-await T.keyboard.press('ArrowDown'); await settle(T, 300); ok('أسفل من حقل البحث ينزل للنتائج', /^p:/.test(await act(T)), await act(T));
+await T.evaluate(() => document.querySelector('#tv [data-wt="recent"]').focus()); await T.keyboard.press('Enter'); await settle(T, 400);
+await T.evaluate(() => document.querySelector('#tv [data-act="wst"]').focus()); await T.keyboard.press('Enter'); await settle(T, 300);
+const st = await T.evaluate(() => { const b = document.querySelector('#tvLayer [data-wst]:not([data-wst=""])'); b.focus(); return b.dataset.wst; }); await T.keyboard.press('Enter'); await settle(T, 500);
+ok('ترشيح الأعمال حسب الاستوديو', await T.evaluate(st => { const l = [...document.querySelectorAll('#tv .tv-grid .tvw')]; return l.length > 0 && l.every(e => wAll().find(g => g.key === e.dataset.w).s === st); }, st), st);
+await T.evaluate(() => document.querySelector('#tv .tv-grid .tvw').focus()); await T.keyboard.press('Enter'); await settle(T, 400);
+ok('نافذة العمل تعرض المشاركات كبطاقات صور', await T.evaluate(() => document.querySelectorAll('#tvLayer .wl-who .tvp').length >= 1));
+await T.evaluate(() => document.querySelector('#tvLayer .wl-who .tvp').focus()); await T.keyboard.press('Enter'); await settle(T, 600);
+ok('من العمل إلى صفحة الممثلة المشاركة', await T.evaluate(() => TVApp.page === 'person' && document.getElementById('tvLayer').hidden));
+ok('صفحة الممثلة: صورة رئيسية كاملة بأبعادها (بلا قص)', await T.evaluate(() => { const im = document.querySelector('.pp-ph img'); return !!im && im.complete && Math.abs(im.clientWidth / im.clientHeight - im.naturalWidth / im.naturalHeight) < .03; }));
+ok('صفحة الممثلة: أعمال + صور + ممثلات مرتبطة', await T.evaluate(() => !!document.querySelector('[data-row="pw"]') && !!document.querySelector('[data-row="ph"]') && !!document.querySelector('[data-row="ps"],[data-row="pc"]')));
+// المقارنة
+const pA = await T.evaluate(() => TVApp.args.id);
+await T.evaluate(() => document.querySelector('#tv [data-act="cmp"]').focus()); await T.keyboard.press('Enter'); await settle(T, 500);
+ok('«قارن» يفتح اختيار الممثلة الثانية', await T.evaluate(() => TVApp.page === 'cmp' && document.querySelectorAll('#tv .tv-grid [data-cp]').length >= 3));
+await T.keyboard.press('Enter'); await settle(T, 600); await T.screenshot({ path: join(out, 'tv-15-compare.png') });
+ok('المقارنة: جدول + أوجه التشابه والاختلاف', await T.evaluate(a => TVApp.page === 'cmp' && TVApp.args.a === a && !!TVApp.args.b && document.querySelectorAll('.cm-l').length >= 8 && document.querySelectorAll('.cm-box').length === 2, pA));
+await T.keyboard.press('Escape'); await settle(T, 400); ok('رجوع من المقارنة لاختيار الثانية', await T.evaluate(() => TVApp.page === 'cmp' && !TVApp.args.b), await T.evaluate(() => TVApp.page + ' ' + JSON.stringify(TVApp.args) + ' layer=' + !document.getElementById('tvLayer').hidden + ' act=' + (document.activeElement.dataset.k||'')));
+// الاستكشاف
+await goNav('explore'); await T.screenshot({ path: join(out, 'tv-16-explore.png') });
+const e0 = await T.evaluate(() => document.querySelector('.ex-b h1').textContent);
+ok('الاستكشاف يبدأ على الصورة', (await act(T)) === 'ex');
+await T.keyboard.press('ArrowLeft'); await settle(T, 400); const e1 = await T.evaluate(() => document.querySelector('.ex-b h1').textContent);
+ok('يسار في الاستكشاف: الممثلة التالية', e1 !== e0 && (await act(T)) === 'ex', e0 + ' → ' + e1);
+await T.keyboard.press('ArrowRight'); await settle(T, 400); ok('يمين: السابقة', await T.evaluate(() => document.querySelector('.ex-b h1').textContent) === e0);
+await T.keyboard.press('Enter'); await settle(T, 500); ok('OK في الاستكشاف يفتح صفحتها', await T.evaluate(n => TVApp.page === 'person' && document.querySelector('.pp-info h1').textContent === n, e0));
+await T.keyboard.press('Escape'); await settle(T, 500); ok('رجوع يعيد للاستكشاف على نفس الممثلة', await T.evaluate(n => TVApp.page === 'explore' && document.querySelector('.ex-b h1').textContent === n, e0));
+// مجموعاتي وملفي
+await goNav('lists'); await T.screenshot({ path: join(out, 'tv-17-lists.png') });
+ok('مجموعاتي: صف لكل قائمة ووسم', await T.evaluate(() => document.querySelectorAll('#tv .tv-sec[data-row^="L"]').length === lists.filter(L => items.some(i => (i.lists || []).includes(L.id))).length && document.querySelectorAll('#tv .tv-sec[data-row^="T"]').length >= 1));
+await goNav('me'); await T.screenshot({ path: join(out, 'tv-18-me.png') });
+ok('ملفي: أرقام وإحصائيات', await T.evaluate(() => document.querySelectorAll('.me-s').length === 8 && document.querySelectorAll('.me-box').length >= 6 && document.querySelector('.me-s b').textContent == items.length));
+await T.evaluate(() => document.querySelector('.me-s[data-go="lib:fav"]').focus()); await T.keyboard.press('Enter'); await settle(T, 500);
+ok('بطاقة إحصائية تفتح القسم المرتبط', await T.evaluate(() => TVApp.page === 'lib' && TVApp.args.f === 'fav'));
+// البحث بلوحة المفاتيح على الشاشة
+await goNav('search'); ok('البحث يبدأ على لوحة المفاتيح', /^kb:/.test(await act(T)), await act(T));
+const typeKey = async ch => { await T.evaluate(ch => document.querySelector(`#tvKb [data-key="${ch}"]`).focus(), ch); await T.keyboard.press('Enter'); await settle(T, 80); };
+for (const ch of ['ن', 'م', 'و', 'ذ', 'ج']) await typeKey(ch); await settle(T, 500);
+ok('الكتابة بلوحة الشاشة تعرض النتائج', await T.evaluate(() => document.getElementById('tvQ').value === 'نموذج' && document.querySelectorAll('#tvRes .tvp').length >= 5));
 await T.screenshot({ path: join(out, 'tv-08-search.png') });
+await T.evaluate(() => document.querySelector('#tvKb [data-key="ا"]').focus()); for (let k = 0; k < 9; k++) { await T.keyboard.press('ArrowLeft'); await settle(T, 60); }
+ok('يسار من لوحة المفاتيح يصل للنتائج', /^(p|w):/.test(await act(T)) && await T.evaluate(() => !!document.activeElement.closest('#tvRes')), await act(T));
+for (let k = 0; k < 30 && await T.evaluate(() => !!document.activeElement.closest('#tvRes')); k++) { await T.keyboard.press('ArrowRight'); await settle(T, 60); }
+ok('يمين من النتائج يعود للوحة المفاتيح', /^kb:/.test(await act(T)), await act(T));
+await T.evaluate(() => document.querySelector('[data-kbx="lg"]').focus()); await T.keyboard.press('Enter'); await settle(T, 200);
+ok('تبديل اللوحة إلى الإنجليزية', await T.evaluate(() => !!document.querySelector('#tvKb [data-key="a"]') && document.activeElement.dataset.kbx === 'lg'));
+await T.evaluate(() => document.querySelector('[data-kbx="cl"]').focus()); await T.keyboard.press('Enter'); await settle(T, 400);
+await T.evaluate(() => document.getElementById('tvQ').focus()); await T.keyboard.type('نموذج 1'); await settle(T, 600);
+ok('الكتابة بلوحة النظام تعمل أيضًا', await T.evaluate(() => document.querySelectorAll('#tvRes .tvp').length >= 5));
+await T.evaluate(() => document.querySelector('#tvRes .tvp').focus()); await T.keyboard.press('Enter'); await settle(T, 500); await T.keyboard.press('Escape'); await settle(T, 500);
+await T.evaluate(() => document.querySelector('[data-kbx="cl"]').focus()); await T.keyboard.press('Enter'); await settle(T, 500);
+ok('سجل البحث يحفظ آخر عملية', await T.evaluate(() => [...document.querySelectorAll('#tvRes [data-qh]')].some(b => b.dataset.qh === 'نموذج 1')));
+await T.evaluate(() => document.querySelector('#tvKb [data-act="voice"]').focus()); await T.keyboard.press('Enter'); await settle(T, 300);
+ok('زر البحث الصوتي يستدعي التعرف الصوتي في النظام', await T.evaluate(() => document.getElementById('tvQ').value === 'نموذج 2' || window.__voiceCalled === true));
+// صورة معطوبة لا تكسر البطاقات
+ok('صورة فشلت → بديل أنيق دون التأثير على البقية', await T.evaluate(async () => { await new Promise(r => setTimeout(r, 700)); const b = document.querySelector('#tvRes .tvp .ph img'); if (!b) return 'noimg'; const n0 = document.querySelectorAll('#tvRes .ph img').length; const ph = b.parentElement; b.removeAttribute('data-fb'); b.src = '/broken-' + Date.now() + '.jpg'; await new Promise(r => setTimeout(r, 500)); return !!ph.querySelector('i') && document.querySelectorAll('#tvRes .ph img').length === n0 - 1 ? true : 'ph=' + ph.innerHTML.slice(0, 120) + ' conn=' + document.contains(ph); }) === true, await T.evaluate(() => (document.querySelector('#tvRes .tvp .ph') || {}).innerHTML?.slice(0, 160)));
+// جولة عشوائية بالأسهم في كل الصفحات: التركيز دائمًا ظاهر وداخل الواجهة
+const dirs = ['ArrowDown', 'ArrowLeft', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowLeft', 'ArrowUp', 'ArrowUp', 'ArrowDown'];
+for (const pg of ['home', 'lib', 'works', 'recs', 'explore', 'lists', 'me', 'sync', 'set']) { await goNav(pg); const bad = [];
+  for (const d of dirs) { await T.keyboard.press(d); await settle(T, 330); const v = await visible(); if (v !== 'ok') bad.push(d + ' ' + v); }
+  ok(`جولة الأسهم في «${pg}»: التركيز ظاهر دائمًا`, bad.length === 0, bad.slice(0, 2).join(' | ')); }
 await goNav('set'); await T.screenshot({ path: join(out, 'tv-09-settings.png') });
 ok('صفحة الإعدادات تفتح وتعرض رقم الإصدار', await T.evaluate(() => TVApp.page === 'set' && /الإصدار/.test(document.querySelector('.tv-about').textContent) && !!APP_VER));
 ok('رقم الإصدار ظاهر في القائمة الجانبية', await T.evaluate(() => /^v\d/.test(document.querySelector('.tv-ver').textContent)));
+await T.evaluate(() => document.querySelector('#tv [data-act="keys"]').focus()); await T.keyboard.press('Enter'); await settle(T, 300);
+ok('دليل استخدام الريموت', await T.evaluate(() => /ضغطة مطوّلة/.test(document.getElementById('tvLayer').textContent))); await T.keyboard.press('Escape'); await settle(T, 200);
 await goNav('sync'); await T.screenshot({ path: join(out, 'tv-10-connect-after.png') });
 ok('صفحة الاتصال تعرض آخر مزامنة', await T.evaluate(() => /آخر مزامنة/.test(document.querySelector('.sy-info').textContent)));
 // الرجوع حتى الخروج

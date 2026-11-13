@@ -1,6 +1,11 @@
 package __PKG__;
 
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.speech.RecognizerIntent;
+import androidx.activity.result.ActivityResult;
+import com.getcapacitor.annotation.ActivityCallback;
+import java.util.ArrayList;
 import android.util.Base64;
 import android.view.WindowManager;
 import com.getcapacitor.JSObject;
@@ -67,6 +72,35 @@ public class ShellPlugin extends Plugin {
             else getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
             call.resolve();
         });
+    }
+
+    // ---------------- البحث الصوتي (ريموت التلفاز) ----------------
+    @PluginMethod
+    public void voice(PluginCall call) {
+        Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, call.getString("lang", "ar-SA"));
+        i.putExtra(RecognizerIntent.EXTRA_PROMPT, call.getString("prompt", ""));
+        i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+        try {
+            startActivityForResult(call, i, "voiceResult");
+        } catch (Exception e) {
+            call.reject("unavailable");
+        }
+    }
+
+    @ActivityCallback
+    private void voiceResult(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        JSObject ret = new JSObject();
+        String text = "";
+        Intent data = result.getData();
+        if (data != null) {
+            ArrayList<String> l = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if (l != null && !l.isEmpty() && l.get(0) != null) text = l.get(0);
+        }
+        ret.put("text", text);
+        call.resolve(ret);
     }
 
     // ---------------- خادم المزامنة ----------------

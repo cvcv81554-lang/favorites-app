@@ -7,12 +7,12 @@ let wRadarBusy=false, wHeroKey='', wHideHero=false;
 
 // 6 تبويبات رئيسية واضحة ومباشرة بدل 13 تبويب مزدحم
 const WTABS=[
-  ['recent','🔥 الأحدث'],
-  ['upcoming','⏳ القادمة'],
-  ['watchlist','🔖 للمشاهدة'],
-  ['unseen','👁 لم أشاهدها'],
-  ['top','★ الأعلى وتوصياتي'],
-  ['more','🧭 الأقسام']
+  ['recent','الأحدث'],
+  ['upcoming','القادمة'],
+  ['watchlist','للمشاهدة'],
+  ['unseen','لم أشاهدها'],
+  ['top','الأفضل'],
+  ['more','الأقسام']
 ];
 
 const WSECS=['collabs','sites','diary','cal','wlists'];
@@ -310,7 +310,7 @@ function drawWorksHub(){
         const src=sug.p||fb;
         const whoNames=sug.who.map(i=>i.name).join(' ، ');
         body+=`<div class="wk-hero">
-          <div class="wk-hero-p" data-wsheet="${esc(sug.key)}">${src?`<img src="${esc(src)}" data-fb="${esc(fb)}" referrerpolicy="no-referrer" onerror="wImgErr(this)" alt="">`:badge(sug.s)}</div>
+          <div class="wk-hero-p" data-wsheet="${esc(sug.key)}">${wCoverHtml(sug)}</div>
           <div style="flex:1;min-width:0">
             <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.74rem;color:var(--gold2);font-weight:700">🎲 اقتراح السهرة لك</span><button type="button" class="ib sm" id="wHeroHide" style="width:24px;height:24px;border:0;background:none;color:var(--muted)" title="إخفاء">✕</button></div>
             <div style="font-weight:700;font-size:.98rem;margin:2px 0;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" dir="auto" data-wsheet="${esc(sug.key)}">${esc(sug.t)}</div>
@@ -375,12 +375,13 @@ function drawWorksHub(){
       body+=`<div class="empty"><b>يوميات المشاهدة فارغة</b>اضغط رمز العين 👁 على أي عمل شاهدته ليُسجَّل تلقائيًا بتاريخ اليوم.</div>`;
     } else {
       const groups={};
-      sList.forEach(g=>{ const ym=(g.wd||g.d||'بدون تاريخ').slice(0,7); (groups[ym]=groups[ym]||[]).push(g); });
+      sList.slice(0,wState.lim).forEach(g=>{ const ym=(g.wd||g.d||'بدون تاريخ').slice(0,7); (groups[ym]=groups[ym]||[]).push(g); });
       Object.entries(groups).sort((a,b)=>b[0].localeCompare(a[0])).forEach(([ym,arr])=>{
         let label=ym;
         if(/^\d{4}-\d{2}$/.test(ym)){ try{ label=new Date(ym+'-01T00:00:00').toLocaleDateString('ar',{year:'numeric',month:'long'}); }catch{} }
         body+=`<div style="margin-bottom:18px"><h3 style="color:var(--gold2);font-size:1rem;margin:0 0 10px">📖 ${esc(label)} <small style="color:var(--muted);font-weight:400">(${arr.length} عمل)</small></h3>${wRenderItems(arr)}</div>`;
       });
+      if(sList.length>wState.lim) body+=`<button class="btn wmore" id="wMoreBtn">عرض المزيد (${sList.length-wState.lim})</button>`;
     }
   } else if(t==='cal'){
     body+=wCalHtml(filtered);
@@ -446,9 +447,9 @@ function drawWorksHub(){
   $('mWorks').innerHTML=`
     <div class="wk-top">
       <div class="wk-bar">
-        <div class="wk-title"><h2>مركز الأعمال</h2><small>${total} عمل · ✓ ${nSeen} · 🔖 ${nWatch} · ⏳ ${nUpc}</small></div>
+        <div class="wk-title"><h2>الأعمال</h2><small>${total} عمل · شاهدت ${total?Math.round(nSeen/total*100):0}٪${nWatch?' · '+nWatch+' للمشاهدة':''}${nUpc?' · '+nUpc+' قادم':''}</small></div>
         <div class="wk-tbtns">
-          <button type="button" class="btn gold" style="padding:7px 12px;font-size:.82rem;display:inline-flex;align-items:center;gap:5px" id="wAddBtn">${icon('plus')} عمل</button>
+          <button type="button" class="ib on" id="wAddBtn" title="إضافة عمل" aria-label="إضافة عمل">${icon('plus')}</button>
           <button type="button" class="ib" id="wPickBtn" title="سحب عمل عشوائي">${icon('shuffle')}</button>
           <button type="button" class="ib" id="wRadarBtn" title="تحديث من المصادر">${icon('refresh')}</button>
           <button type="button" class="ib" id="wCloseBtn" title="إغلاق">${icon('x')}</button>

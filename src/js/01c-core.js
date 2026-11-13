@@ -138,7 +138,7 @@ async function backfillThumbs(){
         document.querySelectorAll('.card[data-id="'+it.id+'"] .ph img.on,.av img[data-pid="'+it.id+'"]').forEach(im=>{ im.src=pic(it); }); } }catch{}
     if(++k%2===0) await new Promise(r=>setTimeout(r,TVLITE?120:40)); }
   // v31: ترقية هادئة لمصغّرات الإصدارات السابقة (360px) إلى الدقة الأعلى، مرة واحدة لكل ممثلة وبالأولوية للظاهر. الصور الأصلية لا تُمس.
-  const up=items.filter(it=>it.thumbV!==3&&it.photos&&it.photos[0]&&PB.local(it.photos[0])).sort((a,b)=>(order.has(a.id)?order.get(a.id):1e9)-(order.has(b.id)?order.get(b.id):1e9));
+  const up=TVLITE?[]:items.filter(it=>it.thumbV!==3&&it.photos&&it.photos[0]&&PB.local(it.photos[0])).sort((a,b)=>(order.has(a.id)?order.get(a.id):1e9)-(order.has(b.id)?order.get(b.id):1e9));
   let u=0; for(const it of up){ if(!items.includes(it)) continue; if(document.hidden){ await new Promise(r=>{ const f=()=>{ if(!document.hidden){ removeEventListener('visibilitychange',f); r(); } }; addEventListener('visibilitychange',f); }); }
     try{ const t=await mkThumb(it.photos[0]); if(items.includes(it)){ it.thumb=t; it.thumbV=3; await save(it); ch=true; 
         document.querySelectorAll('.card[data-id="'+it.id+'"] .ph img.on').forEach(im=>{ im.src=pic(it); }); } }catch{ it.thumbV=3; }

@@ -59,12 +59,13 @@ const Backup=(()=>{
       st.at=Date.now(); st.left=0; LS.set('vkte_bk_at',String(st.at)); if(!st.err) LS.set('vkte_last_export',String(st.at));
     }catch(e){ st.err=String(e&&e.message||e).slice(0,160); }
     running=false; paint(); if(dirty.size||gone.size) kick(1500); }
-  const kick=(ms=4000)=>{ if(!IS_NATIVE) return; clearTimeout(timer); timer=setTimeout(run,ms); };
+  const tvOn=()=>!!(window.TVApp&&TVApp.on);
+  const kick=(ms=4000)=>{ if(!IS_NATIVE||tvOn()) return; clearTimeout(timer); timer=setTimeout(run,ms); };
   HOOKS.saved.push(arr=>{ arr.forEach(x=>dirty.add(x.id)); kick(); });
   HOOKS.deleted.push(id=>{ gone.add(id); dirty.delete(id); kick(); });
   HOOKS.meta.push(()=>{ metaDirty=true; kick(); });
   // أول تشغيل بعد التثبيت/التحديث: أي ممثلة ليست في السجل تُنسخ في الخلفية
-  async function syncAll(force){ if(!IS_NATIVE) return; await loadMan(); items.forEach(i=>{ if(force||!man[i.id]) dirty.add(i.id); });
+  async function syncAll(force){ if(!IS_NATIVE||tvOn()) return; await loadMan(); items.forEach(i=>{ if(force||!man[i.id]) dirty.add(i.id); });
     Object.keys(man).forEach(id=>{ if(!items.some(i=>i.id===id)) gone.add(id); }); if(force) metaDirty=true; if(dirty.size||gone.size||metaDirty) kick(force?100:6000); }
 
   // ---------- الاستعادة التلقائية ----------

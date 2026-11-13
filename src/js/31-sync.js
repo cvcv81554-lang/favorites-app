@@ -9,7 +9,7 @@ const Sync=(()=>{
   const jget=(k,d)=>{ try{ const v=JSON.parse(LS.get(k,'null')); return v==null?d:v; }catch{ return d; } };
   const PH_RE=/^[A-Za-z0-9_-]{1,80}\.(jpg|jpeg|png|webp|gif|avif)$/;
   const extOf=t=>({'image/webp':'webp','image/png':'png','image/gif':'gif','image/avif':'avif'})[t]||'jpg';
-  const LOCAL=['views','lastView','thumbV','nph'];           // حقول خاصة بكل جهاز لا تُزامَن
+  const LOCAL=['views','lastView','nph'];           // حقول خاصة بكل جهاز لا تُزامَن
   const META_KEYS=['vkte_wish','vkte_goal'], KEY_KEYS=['vkte_key','vkte_stash'];
   const h2=s=>{ let a=2166136261>>>0, b=5381; for(let i=0;i<s.length;i++){ const c=s.charCodeAt(i); a=Math.imul(a^c,16777619)>>>0; b=((b<<5)+b+c)>>>0; } return a.toString(36)+b.toString(36)+s.length.toString(36); };
 
@@ -19,7 +19,7 @@ const Sync=(()=>{
     return typeof p==='string'?p:''; }
   function wire(it){ const o={...it}; LOCAL.forEach(k=>delete o[k]); o.photos=(it.photos||[]).map((p,k)=>ref(p,it,k)).filter(Boolean); o.thumb=it.thumb?ref(it.thumb,it,'t'):''; return o; }
   const strip=o=>JSON.stringify(o,(k,v)=>k==='_src'?undefined:v);
-  const sig=it=>{ const o=wire(it); delete o.updated; return h2(strip(o)); };
+  const sig=it=>{ const o=wire(it); delete o.updated; delete o.thumb; delete o.thumbV; return h2(strip(o)); };
   const unref=v=>{ if(v&&typeof v==='object'&&typeof v.f==='string'&&PH_RE.test(v.f)) return FST.on?FST.url({f:v.f,s:+v.s||0,t:String(v.t||'image/jpeg')}):'';
     return typeof v==='string'&&(/^https?:\/\//i.test(v)||/^data:image\//i.test(v))?v:''; };
 
@@ -72,8 +72,9 @@ const Sync=(()=>{
   // =====================================================================
   const cfg=()=>jget('vkte_sync_tv',null);
   const setCfg=c=>{ if(c) LS.set('vkte_sync_tv',JSON.stringify(c)); else LS.del('vkte_sync_tv'); paint(); };
-  const dirty=new Set(jget('vkte_sync_dirty',[]));
-  const saveDirty=()=>LS.set('vkte_sync_dirty',JSON.stringify([...dirty].slice(-5000)));
+  // آخر نسخة متّفق عليها بين الجهازين لكل ممثلة: تحدّد من عدّل منهما (مقارنة ثلاثية بدل «تعديل محلي» عام)
+  let base=jget('vkte_sync_base',{});
+  const saveBase=()=>LS.set('vkte_sync_base',JSON.stringify(base));
   let running=false, queued=false, applying=false, stopReq=false, timer=0;
 
   let transport=async(method,url,body)=>{
@@ -109,7 +110,10 @@ const Sync=(()=>{
       const remote=hello.sig||{}, have=new Set(hello.photos||[]);
       let mine=new Map(items.map(i=>[i.id,i]));
       // 1) سحب ما عُدّل على الشاشة (ما لم يُعدَّل في الجوال منذ آخر مزامنة)
-      const pullIds=Object.keys(remote).filter(id=>{ const cur=mine.get(id); return cur&&!dirty.has(id)&&(remote[id][1]||0)>(cur.updated||0)&&remote[id][0]!==sig(cur); });
+      const mySig=new Map(items.map(i=>[i.id,sig(i)]));
+      // يُسحب ما عدّلته الشاشة وحدها؛ إن عدّل الجهازان نفس الممثلة يفوز الأحدث (updated)
+      const pullIds=Object.keys(remote).filter(id=>{ const cur=mine.get(id); if(!cur) return false; const ps=mySig.get(id), rs=remote[id][0], b=base[id]; if(ps===rs) return false;
+        if(b===ps) return true; if(b===rs) return false; return (remote[id][1]||0)>(cur.updated||0); });
       for(let k=0;k<pullIds.length&&!stopReq;k+=25){ show('جلب تعديلات الشاشة…');
         const r=await call(c,'POST','/get',{ids:pullIds.slice(k,k+25)}); const ch=[];
         (r.items||[]).forEach(x=>{ const cur=mine.get(x.id); if(!cur||!x||typeof x!=='object'||minorRec(x)) return;
@@ -118,9 +122,10 @@ const Sync=(()=>{
         if(ch.length){ applying=true; try{ await save(ch); }finally{ applying=false; } res.pulled+=ch.length; } }
       if(res.pulled){ mine=new Map(items.map(i=>[i.id,i])); render(); }
       // 2) إرسال الصور الناقصة ثم الممثلات المتغيّرة
-      const push=items.filter(i=>{ const r=remote[i.id]; return !r||r[0]!==sig(i); });
+      const pulledSet=new Set(pullIds);
+      const push=items.filter(i=>{ const r=remote[i.id]; return !pulledSet.has(i.id)&&(!r||r[0]!==sig(i)); });
       let batch=[], bytes=0;
-      const flush=async()=>{ if(!batch.length) return; await call(c,'POST','/items',{items:batch}); batch.forEach(x=>dirty.delete(x.id)); res.sent+=batch.length; batch=[]; bytes=0; saveDirty(); };
+      const flush=async()=>{ if(!batch.length) return; await call(c,'POST','/items',{items:batch}); res.sent+=batch.length; batch=[]; bytes=0; };
       for(const it of push){ if(stopReq) break; show(`إرسال ${res.sent+batch.length+1} من ${push.length}…${res.photos?' ('+res.photos+' صورة)':''}`);
         const w=wire(it);
         for(const r of [...w.photos,w.thumb]){ if(!r||typeof r!=='object'||have.has(r.f)) continue;
@@ -133,7 +138,7 @@ const Sync=(()=>{
       if(!stopReq){ const gone=Object.keys(remote).filter(id=>!mine.has(id)); if(gone.length){ await call(c,'POST','/delete',{ids:gone}); res.deleted=gone.length; }
         const prefs={}; META_KEYS.forEach(k=>{ const v=LS.get(k,null); if(v!=null) prefs[k]=v; }); if(c.keys) KEY_KEYS.forEach(k=>{ prefs[k]=LS.get(k,''); });
         await call(c,'POST','/meta',{lists,wlists,prefs}); await call(c,'POST','/done',res); }
-      if(!stopReq&&!push.length) dirty.clear(); saveDirty();
+      if(!stopReq){ base={}; items.forEach(i=>{ base[i.id]=sig(i); }); saveBase(); }
       setCfg({...cfg(),at:Date.now(),err:''});
       if(manual) await askNote(stopReq?'أُوقفت المزامنة.':`تمت المزامنة مع الشاشة ✓\nأُرسلت ${res.sent} ممثلة و${res.photos} صورة${res.deleted?'، وحُذفت '+res.deleted:''}${res.pulled?'.\nجُلبت '+res.pulled+' تعديلات من الشاشة':''}.`);
     }catch(e){ const msg=e&&e.status?why(e):(e&&e.message&&!/fetch|network|connect|timed? ?out|host|refused|unreachable/i.test(e.message)?e.message:why(e));
@@ -142,7 +147,7 @@ const Sync=(()=>{
     return res; }
 
   function schedule(ms){ const c=cfg(); if(!c||c.auto===false) return; clearTimeout(timer); timer=setTimeout(()=>syncNow(false),ms==null?5000:ms); }
-  HOOKS.saved.push(arr=>{ if(applying||!cfg()||(window.TVApp&&TVApp.on)) return; arr.forEach(i=>dirty.add(i.id)); saveDirty(); schedule(); });
+  HOOKS.saved.push(()=>{ if(applying||!cfg()||(window.TVApp&&TVApp.on)) return; schedule(); });
   HOOKS.deleted.push(()=>{ if(cfg()&&!(window.TVApp&&TVApp.on)) schedule(); });
   HOOKS.meta.push(()=>{ if(cfg()&&!(window.TVApp&&TVApp.on)) schedule(); });
 

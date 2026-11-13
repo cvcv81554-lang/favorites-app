@@ -136,8 +136,19 @@ ok('رجوع يغلق النافذة ويعيد التركيز للبطاقة', 
 await T.keyboard.press('Escape'); await settle(T, 500);
 ok('رجوع من صفحة الممثلة يعود للرئيسية', await T.evaluate(() => TVApp.page === 'home'));
 // تعديل الشاشة يرجع للجوال
+const dbg = { tv: await T.evaluate(k => { const g = wAll().find(x => x.key === k); return g.who.map(i => [i.id, Sync.sig(i), i.updated, g.seen]); }, wk), ph: await Ph.evaluate(k => { const g = wAll().find(x => x.key === k); return g.who.map(i => [i.id, Sync.sig(i), i.updated, g.seen, JSON.parse(localStorage.getItem('vkte_sync_base') || '{}')[i.id]]); }, wk) };
 const r4 = await Ph.evaluate(() => Sync.syncNow(false));
-ok('تعديل الشاشة (مشاهدة) يُسحب للجوال', r4.pulled >= 1 && await Ph.evaluate(k => !!wAll().find(g => g.key === k).seen, wk) !== seenBefore, JSON.stringify(r4));
+ok('تعديل الشاشة (مشاهدة) يصل للجوال (بالمزامنة التلقائية أو اليدوية)', await Ph.evaluate(k => !!wAll().find(g => g.key === k).seen, wk) !== seenBefore, JSON.stringify(r4) + ' ' + JSON.stringify(dbg));
+// تعارض: الشاشة تعدّل التقييم، والجوال يحفظ شيئًا خلفيًا (عدّاد الزيارات) لنفس الممثلة → يجب ألا يضيع تعديل الشاشة
+await T.evaluate(async () => { const i = items.find(x => x.id === 'sample-3'); i.rating = 1; i.updated = Date.now(); await save(i); });
+await Ph.evaluate(async () => { const i = items.find(x => x.id === 'sample-3'); i.views = (i.views || 0) + 5; await save(i); });
+await Ph.evaluate(() => Sync.syncNow(false)); await settle(T, 300);
+ok('تعديل الشاشة لا يضيع حين يحفظ الجوال شيئًا خلفيًا لنفس الممثلة', await Ph.evaluate(() => items.find(x => x.id === 'sample-3').rating === 1) && await T.evaluate(() => items.find(x => x.id === 'sample-3').rating === 1));
+// تعارض حقيقي: الجوال يعدّل بعد الشاشة → الأحدث يفوز
+await T.evaluate(async () => { const i = items.find(x => x.id === 'sample-3'); i.rating = 2; i.updated = Date.now(); await save(i); });
+await Ph.waitForTimeout(30); await Ph.evaluate(async () => { const i = items.find(x => x.id === 'sample-3'); i.rating = 4.5; i.updated = Date.now(); await save(i); });
+await Ph.evaluate(() => Sync.syncNow(false)); await settle(T, 300);
+ok('تعارض حقيقي: التعديل الأحدث يفوز على الجهازين', await T.evaluate(() => items.find(x => x.id === 'sample-3').rating === 4.5) && await Ph.evaluate(() => items.find(x => x.id === 'sample-3').rating === 4.5));
 // المكتبة والأعمال والبحث والإعدادات عبر القائمة
 const goNav = async k => { await T.evaluate(k => { const b = document.querySelector(`#tv .tv-nav [data-go="${k}"]`); b.focus(); }, k); await T.keyboard.press('Enter'); await settle(T, 700); };
 await goNav('lib'); await T.screenshot({ path: join(out, 'tv-06-library.png') });
@@ -153,6 +164,8 @@ ok('البحث يعرض النتائج أثناء الكتابة', await T.evalu
 await T.keyboard.press('ArrowDown'); await settle(T, 300); ok('أسفل من حقل البحث ينزل للنتائج', /^p:/.test(await act(T)), await act(T));
 await T.screenshot({ path: join(out, 'tv-08-search.png') });
 await goNav('set'); await T.screenshot({ path: join(out, 'tv-09-settings.png') });
+ok('صفحة الإعدادات تفتح وتعرض رقم الإصدار', await T.evaluate(() => TVApp.page === 'set' && /الإصدار/.test(document.querySelector('.tv-about').textContent) && !!APP_VER));
+ok('رقم الإصدار ظاهر في القائمة الجانبية', await T.evaluate(() => /^v\d/.test(document.querySelector('.tv-ver').textContent)));
 await goNav('sync'); await T.screenshot({ path: join(out, 'tv-10-connect-after.png') });
 ok('صفحة الاتصال تعرض آخر مزامنة', await T.evaluate(() => /آخر مزامنة/.test(document.querySelector('.sy-info').textContent)));
 // الرجوع حتى الخروج

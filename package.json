@@ -7,9 +7,11 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "serve": "node scripts/serve.mjs",
-    "test": "node tests/run.mjs && node tests/native.mjs && node tests/tv.mjs",
+    "test": "node tests/run.mjs && node tests/native.mjs && node tests/tv.mjs && node tests/hub.mjs",
     "android:prepare": "npm run build && (npx cap add android || true) && node scripts/patch-android.mjs && npx cap sync android",
-    "ios:prepare": "npm run build && (npx cap add ios || true) && node scripts/patch-ios.mjs && npx cap sync ios"
+    "ios:prepare": "npm run build && (npx cap add ios || true) && node scripts/patch-ios.mjs && npx cap sync ios",
+    "hub": "node hub/server.mjs",
+    "test:hub": "node tests/hub.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.0",

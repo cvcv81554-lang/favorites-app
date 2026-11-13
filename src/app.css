@@ -665,6 +665,22 @@ body.inpage #bkBanner{display:none}
 .rses-ph img{width:100%;height:100%;object-fit:cover}
 .rses-s{justify-content:center;gap:8px;margin:12px 0 4px}.rses-s button{width:54px;height:54px;font-size:2.3rem}.rses-s button:hover,.rses-s button:hover~button{color:var(--line2)}
 .rses-s:hover button{color:var(--acc2)}.rses-s button:hover~button{color:var(--line2)}
+/* ---------- الاقتراحات: الأدوات السريعة، الشبه، شبيهات، تحليل الذوق ---------- */
+.rx-quick{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:10px}
+.rc-near{font-size:.76rem;font-weight:700;color:var(--acc2);background:color-mix(in srgb,var(--acc) 13%,transparent);border-radius:10px;padding:4px 9px}
+.rcd{border-radius:22px}.rc-ph{aspect-ratio:1}
+.rx-prof{display:none}
+.rx-cc{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.rx-st{margin-bottom:8px}
+@media(min-width:620px){.rc-ph{aspect-ratio:4/5}}
+.rc-act{gap:5px}.rc-ic{width:40px;height:42px;font-size:1rem}
+.rl{display:flex;align-items:center;gap:8px;padding:4px 0;border-top:1px solid var(--line)}.rl:first-child{border-top:0}.rl.done{opacity:.45}
+.rl-m{flex:1;min-width:0;display:flex;align-items:center;gap:10px;text-align:start;padding:5px 2px;min-height:60px}
+.rl-m .av{width:50px;height:62px;border-radius:12px}.rl-m .t{flex:1;min-width:0;display:grid}.rl-m .t b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rl-m small{color:var(--muted);font-size:.74rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rl-s{color:var(--acc2)!important}.rl-m em{font-style:normal;font-weight:800;color:var(--acc2);flex:none}
+.tnums{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px}
+.tn{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 8px;text-align:center;display:grid;gap:1px}
+.tn b{font-size:1.5rem;background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}.tn b small{font-size:.7rem}.tn span{font-size:.78rem}.tn em{font-style:normal;color:var(--muted);font-size:.7rem}
 /* الأعمال: أدوات التحديد/التصدير تظهر مع «فلترة» */
 #mWorks:not(.flt-open):not(.v18selmode) .v18tools{display:none}
 @media(min-width:860px){

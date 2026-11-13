@@ -57,6 +57,7 @@ const Home=(()=>{
       ${shelf('المفضلات ★',favs.slice(0,14).map(i=>pCard(i)).join(''),'fav')}
       ${shelf('أعمال قادمة ⏳',upc.map(g=>{ const d=daysUntil(g.d); return wCard(g,d===0?'اليوم':d===1?'غدًا':d>1?'بعد '+d+' يوم':'قريبًا'); }).join(''),'upcoming','wide')}
       ${shelf('قائمة المشاهدة 🔖',wl.map(g=>wCard(g,g.du?g.du+' د':'')).join(''),'watchlist','wide')}
+      ${shelf('مقترحات تناسب ذوقك 💡',(_recCache.list||[]).slice(0,12).map((c,n)=>`<button type="button" class="hc" data-rec="${n}"><span class="hc-ph">${c.img?`<img src="${esc(c.img)}" referrerpolicy="no-referrer" loading="lazy" decoding="async" onerror="this.remove()" alt="">`:'♡'}${c.matchPct?`<em>${c.matchPct}٪</em>`:''}</span><b>${esc(c.name)}</b><small>${esc(c.cc?ctryName(c.cc):(c.country||''))||'&nbsp;'}</small></button>`).join(''),'recs')}
       ${shelf('الأعلى تقييمًا',top.map(i=>pCard(i)).join(''),'top')}
       ${shelf('ترتيب المواجهات ⚔️',ranked.map((i,n)=>pCard(i,'#'+(n+1)+' · '+(i.elo||1000))).join(''),'duelboard')}
       ${shelf('أعياد ميلاد قريبة 🎂',bd.map(([i,n])=>pCard(i,bdayTxt(n)+' · '+n.turns)).join(''),'bday')}
@@ -68,12 +69,13 @@ const Home=(()=>{
   // ---- التنقل ----
   function goLib(fn){ closeOv('ovHome'); state.fav=false; state.tag=null; state.list=null; state.smart=null; $('q').value=''; if(fn) fn(); render(true); window.scrollTo(0,0); }
   const GO={ lib:()=>goLib(), fav:()=>goLib(()=>{ state.fav=true; }), top:()=>goLib(()=>{ $('sort').value='rating'; }), recent:()=>goLib(()=>{ $('sort').value='added'; }), unrated:()=>goLib(()=>{ state.smart='unrated'; }),
-    works:()=>openWorksHub('recent'), upcoming:()=>openWorksHub('upcoming'), watchlist:()=>openWorksHub('watchlist'), unseen:()=>openWorksHub('unseen'), unseenw:()=>openWorksHub('unseen'), bday:openBirthdays, duelboard:()=>Duel.open('board') };
+    works:()=>openWorksHub('recent'), upcoming:()=>openWorksHub('upcoming'), watchlist:()=>openWorksHub('watchlist'), unseen:()=>openWorksHub('unseen'), unseenw:()=>openWorksHub('unseen'), bday:openBirthdays, duelboard:()=>Duel.open('board'), recs:()=>{ if(window.openRecs) window.openRecs(); } };
   const TOOL={ duel:()=>Duel.open(), tier:()=>Tier.open(), random:()=>$('bRandom').click(), show:()=>Gallery.playLibrary(), add:()=>$('bAdd').click(), settings:()=>$('bSet').click(), import:()=>$('bSet').click(),
     search:()=>{ goLib(); setTimeout(()=>$('q').focus(),120); }, bday:openBirthdays, compare:()=>toolCompare(), tags:()=>toolTags(), lock:()=>$('bLock').click(), blur:()=>$('bBlur').click() };
   const onClick=e=>{ const t=e.target;
     const sp=t.closest('[data-spot]'); if(sp){ spotSkip++; draw(); return; }
     const sh=t.closest('[data-show]'); if(sh){ Gallery.playItem(sh.dataset.show); return; }
+    const rc=t.closest('[data-rec]'); if(rc){ const c=(_recCache.list||[])[+rc.dataset.rec]; if(c) previewRecPerformer(c); return; }
     const tl=t.closest('[data-tool]'); if(tl){ const f=TOOL[tl.dataset.tool]; if(f) f(); return; }
     const go=t.closest('[data-go]'); if(go){ const f=GO[go.dataset.go]; if(f) f(); return; }
     const ws=t.closest('[data-wsheet]'); if(ws){ wSheet(ws.dataset.wsheet); return; }

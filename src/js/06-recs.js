@@ -18,7 +18,7 @@
   const kOf = c => c.k || norm(c.name);
   const flag = cc => (cc && /^[A-Z]{2}$/.test(cc)) ? String.fromCodePoint(...[...cc].map(ch => 127397 + ch.charCodeAt(0))) : '';
   const ago = t => { if (!t) return 'لم يُحدَّث بعد'; const m = Math.round((Date.now() - t) / 6e4); if (m < 1) return 'الآن'; if (m < 60) return 'منذ ' + m + ' دقيقة'; const h = Math.round(m / 60); if (h < 24) return 'منذ ' + h + ' ساعة'; return 'منذ ' + Math.round(h / 24) + ' يوم'; };
-  const FKEYS = ['country', 'eth', 'hair', 'eyes', 'cup', 'age', 'height', 'exp', 'studio', 'tag'];
+  const FKEYS = ['like', 'country', 'eth', 'hair', 'eyes', 'cup', 'age', 'height', 'exp', 'studio', 'tag'];
 
   // ---------- مصادر البيانات ----------
   function findCand(k) {
@@ -33,6 +33,7 @@
   }
   function visible() {
     let l = baseList();
+    if (window.RecsPlus && ui.view !== 'saved') l = RecsPlus.filter(l);
     if (RS.cc) l = l.filter(c => (c.cc || '') === RS.cc);
     const ag = c => (c.age != null ? c.age : candAge(c)) || 99;
     if (ui.sort === 'new') l = l.slice().sort((a, b) => (b.t || 0) - (a.t || 0));
@@ -75,11 +76,11 @@
       <div class="rc-b">
         <h4 data-act="open" data-k="${esc(k)}">${esc(c.name)}</h4>
         <div class="rc-meta">${esc(meta(c))}</div>
-        <div class="rc-chips">${chipsOf(c).map(t => `<span>${esc(t)}</span>`).join('') || '<span>توافق جزئي مع ذوقك</span>'}</div>
+        ${(c.near && c.near.length) ? `<div class="rc-near">تشبه ${esc(c.near.join(' و '))}</div>` : ''}<div class="rc-chips">${chipsOf(c).map(t => `<span>${esc(t)}</span>`).join('') || '<span>توافق جزئي مع ذوقك</span>'}</div>
         <details class="rc-more"><summary>لماذا هذا الاقتراح؟</summary>${(c.reasons || []).slice(0, 4).map(r => `<p>• ${esc(r)}</p>`).join('')}${barsOf(c)}</details>
         <div class="rc-act">
           <button type="button" class="rc-add" data-act="add" data-k="${esc(k)}">إضافة ★</button>
-          <button type="button" class="rc-ic ${sv ? 'on' : ''}" data-act="save" data-k="${esc(k)}" aria-label="حفظ لاحقًا" title="حفظ لاحقًا">🔖</button>
+          <button type="button" class="rc-ic" data-act="like" data-k="${esc(k)}" aria-label="أعجبتني: اقترح مثلها" title="أعجبتني: اقترح مثلها">👍</button><button type="button" class="rc-ic ${sv ? 'on' : ''}" data-act="save" data-k="${esc(k)}" aria-label="حفظ لاحقًا" title="حفظ لاحقًا">🔖</button>
           <button type="button" class="rc-ic rc-no" data-act="ign" data-k="${esc(k)}" aria-label="ليست ذوقي" title="ليست ذوقي">✕</button>
         </div>
       </div></article>`;
@@ -101,8 +102,8 @@
   // ---------- بناء الواجهة ----------
   function skeleton(root, standalone) {
     root.innerHTML = `<div class="rx">
-      ${standalone ? `<div class="rx-top"><h2>💡 الاقتراحات الذكية</h2><button class="ib" data-act="close" aria-label="إغلاق">${icon('x')}</button></div>` : ''}
-      <div class="rx-stat"></div><div class="rx-prof"></div><div class="rx-bar"></div><div class="rx-cc"></div><div class="rx-body"></div><div class="rx-more"></div></div>`;
+      ${standalone ? `<div class="rx-top"><h2>اكتشف</h2><button class="ib" data-act="close" aria-label="إغلاق">${icon('x')}</button></div>` : ''}
+      <div class="rx-stat"></div><div class="rx-quick"></div><div class="rx-prof"></div><div class="rx-bar"></div><div class="rx-cc"></div><div class="rx-body"></div><div class="rx-more"></div></div>`;
   }
   function paintStat(root) {
     const el = root.querySelector('.rx-stat'); if (!el) return;
@@ -148,7 +149,7 @@
     const canMore = ui.view !== 'saved' && !RS.cc && (_recPool.list || []).length > (_recCache.list || []).length && RS.want < 96;
     more.innerHTML = canMore ? '<button type="button" class="btn" data-act="more">عرض المزيد ↓</button>' : '';
   }
-  function paintAll(root) { paintStat(root); paintProf(root); paintBar(root); paintBody(root); }
+  function paintAll(root) { paintStat(root); if (window.RecsPlus) RecsPlus.paintQuick(root); paintProf(root); paintBar(root); paintBody(root); }
   function repaintAll() { RS.roots.forEach(r => { if (!r.isConnected) { RS.roots.delete(r); return; } paintBar(r); paintStat(r); paintBody(r); }); updBar(); }
 
   // ---------- تعلّم وإجراءات ----------
@@ -221,6 +222,7 @@
     const c = findCand(k); if (!c) return;
     if (a === 'open') preview(c); else if (a === 'add') doAdd(c); else if (a === 'save') doSave(c); else if (a === 'ign') doIgnore(c);
     else if (a === 'skip') { RS.skipped.add(k); repaintAll(); }
+    else if (a === 'like' && window.RecsPlus) RecsPlus.like(c);
   }
   function bind(root) {
     root.addEventListener('click', e => {
@@ -303,6 +305,7 @@
   previewRecPerformer = function (c) { preview(c); };
   window.recsOnChange = function () { repaintAll(); if ($$('ovStats').classList.contains('show') && statsTab === 'overview') drawStatsModal(); };
   window.openRecs = openRecs;
+  window.recsRerank = () => { try { localRank(); } catch (e) { console.warn('rerank', e); } repaintAll(); };
   addEventListener('pagehide', flushPend);
   document.addEventListener('visibilitychange', () => { if (document.hidden) flushPend(); });
   const rb = $$('recBar'); if (rb) rb.onclick = openRecs;

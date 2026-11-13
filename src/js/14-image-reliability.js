@@ -9,7 +9,7 @@
 const lerr=(k,e)=>{ try{ const a=JSON.parse(LS.get('vkte_errlog','[]'))||[]; a.push({t:Date.now(),k:'v28:'+k,m:String(e&&e.message||e).slice(0,300),s:''}); LS.set('vkte_errlog',JSON.stringify(a.slice(-40))); }catch{} };
 const REMOTE=/^https?:/i, MAXTRY=2;
 const hostOf=el=>(el.closest('#car,.car')?el:(el.closest('.ph,.wkp,.wrow-th,.wk-hero-p,.rc-ph,.av,.pv-ph,.dk-ph,.wsh-p,.lcv')||el)); /* v29: لا نُلبس الأب حالة الفشل أبدًا (كان يخفي كل صور الشريط) */
-function failed(el){ const h=hostOf(el); if(h&&!h.classList.contains('av')) h.classList.add('imgfail'); el.dataset.failed='1'; }
+function failed(el){ if(el.closest('.wcv')){ el.dataset.failed='1'; return; } const h=hostOf(el); if(h&&!h.classList.contains('av')) h.classList.add('imgfail'); el.dataset.failed='1'; }
 function retry(el){ const n=+el.dataset.try||0; const src=el.dataset.orig||el.getAttribute('src')||''; if(!REMOTE.test(src)||n>=MAXTRY) return false;
   el.dataset.orig=src; el.dataset.try=String(n+1); el.classList.add('rt');
   setTimeout(()=>{ if(!el.isConnected) return; if(navigator.onLine===false){ el.dataset.try=String(n); el.dataset.wait='1'; return; } el.removeAttribute('src'); el.src=src; },900*(n+1)+Math.random()*400);

@@ -5,8 +5,8 @@
       واستعادة تلقائية عند أول تشغيل إن وُجد المجلد وكانت القاعدة فارغة.
    مفاتيح الاتصال ورمز القفل لا تدخل أي نسخة. */
 const Backup=(()=>{
-  const PREF_KEYS=['vkte_rec_saved','vkte_rec_ignored','vkte_rec_feedback','vkte_rec_fb2','vkte_rec_ui','vkte_view','vkte_sort','vkte_wview','vkte_picknew','vkte_autoworks','vkte_recent','vkte_open_app','vkte_open_q','vkte_open_tpl','vkte_theme','vkte_accent'];
-  const ARR_KEYS=new Set(['vkte_rec_saved','vkte_rec_ignored','vkte_recent']);
+  const PREF_KEYS=['vkte_rec_saved','vkte_rec_ignored','vkte_rec_feedback','vkte_rec_fb2','vkte_rec_ui','vkte_view','vkte_sort','vkte_wview','vkte_picknew','vkte_autoworks','vkte_recent','vkte_open_app','vkte_open_q','vkte_open_tpl','vkte_theme','vkte_accent','vkte_wish','vkte_goal'];
+  const ARR_KEYS=new Set(['vkte_rec_saved','vkte_rec_ignored','vkte_recent','vkte_wish']);
   const DIR='FavoritesBackup';
   const FS=()=>NATIVE.Filesystem;
   const prefsOut=()=>{ const p={}; PREF_KEYS.forEach(k=>{ const v=LS.get(k,null); if(v!==null&&v!=='') p[k]=v; }); return p; };

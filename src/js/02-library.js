@@ -110,19 +110,15 @@ function openLists(){
       <div class="lca"><button class="ib sm glass" data-lr="${L.id}" aria-label="إعادة تسمية">${icon('edit')}</button><button class="ib sm glass" data-ld="${L.id}" aria-label="حذف">${icon('trash')}</button></div>
       <div class="lcb"><div class="lcn">${esc(L.name)}</div><div class="lcm">${ms.length} ممثلة${avg?` · ★ ${avg.toFixed(1)}`:''}</div></div></div>`; }).join('');
   const smartHtml=SMART.map(([k,n,fn])=>{ const c=items.filter(fn).length; return `<span class="chip ${state.smart===k?'on':''}" data-sm="${k}">${esc(n)} (${c})</span>`; }).join('');
-  $('mLists').innerHTML=`<div class="fh"><h2>القوائم والأدوات</h2><button class="ib" id="lClose" aria-label="إغلاق">${icon('x')}</button></div>
+  $('mLists').innerHTML=`<div class="fh"><h2>القوائم</h2><button class="ib" id="lClose" aria-label="إغلاق">${icon('x')}</button></div>
     <p class="src fsub">${lists.length?'اضغط على قائمة لعرض ممثلاتها':'نظّم ممثلاتك في قوائم، مثل «الأفضل هذا العام» أو «أريد مشاهدتها»'}</p>
     <div class="lgrid">${cards}<button class="lc new" id="lNew">${icon('plus')}<span>قائمة جديدة</span></button></div>
-    <div style="padding:0 16px 14px"><h3 style="margin:6px 0 8px;color:var(--gold2);font-size:.95rem">قوائم ذكية تلقائية</h3><div style="display:flex;gap:8px;flex-wrap:wrap">${smartHtml}</div></div>
-    <div style="padding:0 16px 14px"><h3 style="margin:6px 0 8px;color:var(--gold2);font-size:.95rem">أدوات المجموعة</h3><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="bToolCmp">⚖️ مقارنة ممثلتين</button><button class="btn" id="bToolTags">🏷️ مدير الوسوم</button><button class="btn gold" id="bGoWorks">${icon('film')} فتح مركز الأعمال</button></div></div>
-    ${(state.list||state.smart)?'<div class="actions" style="justify-content:center;padding:0 16px"><button class="btn" id="lClear">إلغاء التصفية الحالية</button></div>':''}`;
+    <div style="padding:0 0 14px"><h3 style="margin:6px 0 8px;color:var(--gold2);font-size:.95rem">قوائم ذكية تلقائية</h3><div style="display:flex;gap:8px;flex-wrap:wrap">${smartHtml}</div></div>
+    ${(state.list||state.smart)?'<div class="actions" style="justify-content:center"><button class="btn" id="lClear">إلغاء التصفية الحالية</button></div>':''}`;
   $('mLists').classList.toggle('blur',document.body.classList.contains('blur'));
   $('ovLists').classList.add('show'); $('mLists').scrollTop=0;
   $('lClose').onclick=()=>closeOv('ovLists');
   if($('lClear')) $('lClear').onclick=()=>{ state.list=null; state.smart=null; closeOv('ovLists'); render(true); };
-  $('bToolCmp').onclick=()=>toolCompare();
-  $('bToolTags').onclick=()=>toolTags();
-  $('bGoWorks').onclick=()=>{ closeOv('ovLists'); openWorksHub(); };
   $('lNew').onclick=async()=>{ const n=await askText('اسم القائمة الجديدة','','مثال: الأفضل هذا العام'); if(n){ lists.push({id:uid(),name:n}); saveLists(); openLists(); } };
   $('mLists').onclick=async e=>{
     const sm=e.target.closest('[data-sm]');

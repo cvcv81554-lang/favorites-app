@@ -13,7 +13,8 @@ async function fetchImage(url){
 // تحميل صورة خارجية وحفظها محليًا (للعمل بلا إنترنت). ترجع data: أو null
 async function localizeImage(url){ try{ const b=await fetchImage(url); return await resize(new File([b],'x',{type:b.type})); }catch{ return null; } }
 
-const busy={ show(t){ $('busyT').textContent=t||''; $('busy').classList.add('show'); }, hide(){ $('busy').classList.remove('show'); } };
+const busy={ show(t,onCancel){ $('busyT').textContent=t||''; const x=$('busyX'); x.hidden=!onCancel; x.onclick=onCancel?()=>{ x.textContent='جارٍ الإيقاف…'; onCancel(); }:null; if(!$('busy').classList.contains('show')) x.textContent='إيقاف'; $('busy').classList.add('show'); },
+  hide(){ $('busy').classList.remove('show'); $('busyX').hidden=true; } };
 
 (function(){
   const PAGES=['ovHome','ovWorks','ovStats','ovRecs','ovLists','ovMore'];

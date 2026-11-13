@@ -639,6 +639,32 @@ body.blur #mHome img,body.blur #mDuel img,body.blur #mTier img,body.blur #mAsk i
 /* نافذة العمل: الأزرار بعرض كامل ومرتّبة */
 #mAsk .wsh-p{position:relative;border-radius:var(--r);overflow:hidden;margin-bottom:12px}
 html.tv .wkc.tvf,html.tv .wi.tvf{border-radius:var(--r)}
+/* أغلفة الأعمال: إطار مربع والصورة كاملة دائمًا (لا قصّ في أي مكان) */
+.wkp{aspect-ratio:1}
+.wcv-im,.wcv-im.cv{object-fit:contain}
+.wcv-sp{gap:3px;padding:3px}.wcv-sp img{object-fit:contain;object-position:center;background:rgba(0,0,0,.28);border-radius:8px}
+.wrow-th{width:74px;aspect-ratio:1}.wk-hero-p{width:96px;aspect-ratio:1}
+.wsh-p{aspect-ratio:4/3;max-height:46dvh}
+.hw-ph{aspect-ratio:4/3}
+body.inpage #bkBanner{display:none}
+#mAsk p{white-space:pre-line}
+#busy>div{flex-wrap:wrap;justify-content:center}#busyX{min-height:38px}
+/* ---------- الأقسام الإضافية ---------- */
+.hgoal{width:100%;display:grid;grid-template-columns:auto 1fr;gap:2px 12px;align-items:center;text-align:start;padding:12px 14px;margin:8px 0 2px;border-radius:var(--r);background:var(--card);border:1px solid var(--line)}
+.hgoal span{grid-row:span 3;font-size:1.7rem}.hgoal b{font-size:.92rem}.hgoal small{color:var(--muted);font-size:.74rem}.hgoal .bt{height:7px}
+.hgoal.done{border-color:color-mix(in srgb,var(--ok) 55%,transparent)}.hgoal.off{border-style:dashed}
+.achg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.ach{display:grid;gap:3px;padding:12px;border-radius:16px;background:var(--card);border:1px solid var(--line);opacity:.78}
+.ach span{font-size:1.6rem;filter:grayscale(1)}.ach b{font-size:.88rem}.ach small{color:var(--muted);font-size:.72rem;min-height:2.6em}.ach em{font-style:normal;font-size:.72rem;color:var(--muted)}.ach .bt{height:6px}
+.ach.ok{opacity:1;border-color:color-mix(in srgb,var(--acc) 55%,transparent);background:linear-gradient(160deg,color-mix(in srgb,var(--acc) 14%,var(--card)),var(--card))}.ach.ok span{filter:none}.ach.ok em{color:var(--acc2);font-weight:700}
+.wrapk{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.wrapk div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 4px;text-align:center}
+.wrapk b{display:block;font-size:1.15rem;color:var(--acc2)}.wrapk span{color:var(--muted);font-size:.68rem}
+@media(max-width:420px){.wrapk{grid-template-columns:repeat(2,1fr)}}
+.wrapp{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}.wrapp .hc{width:96px}
+.rses-ph{width:min(62vw,280px);aspect-ratio:3/4;margin:0 auto;border-radius:22px;overflow:hidden;background:var(--card2);display:grid;place-items:center;font-size:3rem;color:var(--acc2)}
+.rses-ph img{width:100%;height:100%;object-fit:cover}
+.rses-s{justify-content:center;gap:8px;margin:12px 0 4px}.rses-s button{width:54px;height:54px;font-size:2.3rem}.rses-s button:hover,.rses-s button:hover~button{color:var(--line2)}
+.rses-s:hover button{color:var(--acc2)}.rses-s button:hover~button{color:var(--line2)}
 /* الأعمال: أدوات التحديد/التصدير تظهر مع «فلترة» */
 #mWorks:not(.flt-open):not(.v18selmode) .v18tools{display:none}
 @media(min-width:860px){

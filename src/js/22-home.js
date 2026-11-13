@@ -50,7 +50,9 @@ const Home=(()=>{
         <div class="ibtns"><button type="button" class="ib" data-tool="search" aria-label="بحث">${icon('search')}</button><button type="button" class="ib" data-tool="add" aria-label="إضافة">${icon('plus')}</button><button type="button" class="ib" data-tool="settings" aria-label="الإعدادات">${icon('set')}</button></div></header>
       ${spotlight()}
       <div class="hstats"><button type="button" data-go="lib"><b>${N}</b><span>ممثلة</span></button><button type="button" data-go="fav"><b>${favs.length}</b><span>مفضلة</span></button><button type="button" data-go="works"><b>${all.length}</b><span>عمل</span></button><button type="button" data-go="unseen"><b>${all.length?Math.round(nSeen/all.length*100):0}٪</b><span>شاهدتها</span></button></div>
-      <div class="htiles">${tile('duel','⚔️','مواجهة','أيهما تفضّل؟')}${tile('tier','🏆','المستويات','رتّبهن S إلى D')}${tile('random','🎲','سحب عشوائي','ماذا أشاهد؟')}${tile('show','🖼️','عرض شرائح','معرض بملء الشاشة')}</div>
+      <div class="htiles">${tile('duel','⚔️','مواجهة','أيهما تفضّل؟')}${tile('tier','🏆','المستويات','رتّبهن S إلى D')}${tile('rate','⭐','جلسة تقييم','قيّم غير المقيَّمات')}${tile('random','🎲','سحب عشوائي','ماذا أشاهد؟')}</div>
+      ${Extras.goalHtml()}
+      ${shelf('في مثل هذا اليوم 🕰️',Extras.memories().slice(0,12).map(g=>wCard(g,g.wd.slice(0,4))).join(''),'','wide')}
       ${shelf('تابعت مؤخرًا',recent.map(i=>pCard(i)).join(''))}
       ${shelf('المفضلات ★',favs.slice(0,14).map(i=>pCard(i)).join(''),'fav')}
       ${shelf('أعمال قادمة ⏳',upc.map(g=>{ const d=daysUntil(g.d); return wCard(g,d===0?'اليوم':d===1?'غدًا':d>1?'بعد '+d+' يوم':'قريبًا'); }).join(''),'upcoming','wide')}
@@ -89,5 +91,5 @@ const Home=(()=>{
   openDetail=function(id){ const r=_od.apply(this,arguments);
     try{ const it=items.find(x=>x.id===id); if(it){ it.views=(it.views||0)+1; it.lastView=Date.now(); pend.add(it); clearTimeout(vt); vt=setTimeout(()=>{ const a=[...pend].filter(x=>items.includes(x)); pend.clear(); if(a.length) save(a); },4000); } }catch{}
     return r; };
-  return {open,draw,openBirthdays,nextBday};
+  return {open,draw,openBirthdays,nextBday,TOOL};
 })();

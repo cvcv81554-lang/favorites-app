@@ -88,6 +88,11 @@
     <button type="button" class="mt" id="bStats"><span>📊</span><b>الإحصائيات</b><small>أرقام مكتبتك وذوقك</small></button>
     <button type="button" class="mt" data-tool="duel"><span>⚔️</span><b>المواجهة</b><small>أيهما تفضّل؟ ترتيب حقيقي لذوقك</small></button>
     <button type="button" class="mt" data-tool="tier"><span>🏆</span><b>المستويات</b><small>رتّبهن من S إلى D</small></button>
+    <button type="button" class="mt" data-tool="studios"><span>🎬</span><b>الاستوديوهات</b><small>ممثلات وأعمال كل استوديو</small></button>
+    <button type="button" class="mt" data-tool="rate"><span>⭐</span><b>جلسة تقييم</b><small>قيّم غير المقيَّمات بسرعة</small></button>
+    <button type="button" class="mt" data-tool="wrap"><span>📅</span><b>ملخص السنة</b><small>ماذا شاهدت هذا العام؟</small></button>
+    <button type="button" class="mt" data-tool="ach"><span>🏅</span><b>الإنجازات</b><small>أوسمة تتقدّم مع استخدامك</small></button>
+    <button type="button" class="mt" data-tool="wish"><span>📌</span><b>قائمة الانتظار</b><small>أسماء تريد إضافتها لاحقًا</small></button>
     <button type="button" class="mt" data-tool="bday"><span>🎂</span><b>أعياد الميلاد</b><small>القادمة بالترتيب</small></button>
     <button type="button" class="mt" data-tool="random"><span>🎲</span><b>سحب عشوائي</b><small>ممثلة وعمل للمشاهدة</small></button>
     <button type="button" class="mt" data-tool="show"><span>🖼️</span><b>عرض شرائح</b><small>معرض بملء الشاشة</small></button>
@@ -210,7 +215,7 @@
 <button id="toTop" aria-label="للأعلى"><svg class="ic"><use href="#i-chev"/></svg></button>
 <div id="offPill" role="status">لا يوجد اتصال — بياناتك المحفوظة تعمل</div>
 <div id="bkBanner" role="status"><span>مرّ وقت على آخر نسخة احتياطية.</span><button class="btn gold" id="bkNow">تصدير</button><button class="btn" id="bkLater">لاحقًا</button></div>
-<div id="busy" role="status"><div><span class="spin"></span><b id="busyT"></b></div></div>
+<div id="busy" role="status"><div><span class="spin"></span><b id="busyT"></b><button type="button" class="btn" id="busyX" hidden>إيقاف</button></div></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script src="native.js?v=__V__"></script>

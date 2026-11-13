@@ -70,6 +70,13 @@ const Sync=(()=>{
   // =====================================================================
   // الجوال: الإرسال
   // =====================================================================
+  const cfg=()=>jget('vkte_sync_tv',null);
+  const setCfg=c=>{ if(c) LS.set('vkte_sync_tv',JSON.stringify(c)); else LS.del('vkte_sync_tv'); paint(); };
+  // آخر نسخة متّفق عليها بين الجهازين لكل ممثلة: تحدّد من عدّل منهما (مقارنة ثلاثية بدل «تعديل محلي» عام)
+  let base=jget('vkte_sync_base',{});
+  const saveBase=()=>LS.set('vkte_sync_base',JSON.stringify(base));
+  let running=false, queued=false, applying=false, stopReq=false, timer=0;
+
   let transport=async(method,url,body)=>{
     const isStr=typeof body==='string';
     if(IS_NATIVE){ const r=await NATIVE.CapacitorHttp.request({url,method,headers:{'Content-Type':isStr?'text/plain':'application/json'},data:body==null?undefined:body,connectTimeout:6000,readTimeout:120000});
@@ -79,96 +86,70 @@ const Sync=(()=>{
     let r; try{ r=await fetch(url,{method,signal:ac.signal,headers:{'Content-Type':isStr?'text/plain':'application/json'},body:body==null?undefined:(isStr?body:JSON.stringify(body))}); }finally{ clearTimeout(to); }
     const d=await r.json().catch(()=>({})); if(!r.ok) throw Object.assign(new Error(d.error||('HTTP '+r.status)),{status:r.status}); return d; };
   const call=(c,method,path,body)=>transport(method,'http://'+c.h+path+(path.includes('?')?'&':'?')+'k='+encodeURIComponent(c.k),body);
-  const normHP=(h,port)=>{ h=String(h||'').trim().replace(/^https?:\/\//i,'').replace(/\/.*$/,''); if(!h) return ''; return /:\d+$/.test(h)?h:h+':'+port; };
-  const normH=h=>normHP(h,8765);
+  const why=e=>{ const s=e&&e.status; if(s===401) return 'الرمز غير صحيح. تأكد من الرمز الظاهر على الشاشة.'; if(s===429) return 'محاولات خاطئة كثيرة. أعد تشغيل التطبيق على الشاشة.';
+    return 'لا يمكن الوصول إلى الشاشة. تأكد أن تطبيق المفضلة مفتوح على الشاشة، وأن الجوال والشاشة على نفس شبكة Wi-Fi.'; };
+  const normH=h=>{ h=String(h||'').trim().replace(/^https?:\/\//i,'').replace(/\/.*$/,''); if(!h) return ''; return /:\d+$/.test(h)?h:h+':8765'; };
 
-  // رابط مزامنة واحد (الشاشة، أو خادم Favorites Hub لـ Nuvio). لكل رابط إعداده وبصمته الأساسية وطابوره.
-  // o: {key, baseKey, port, who, twoWay, paint, openPair}
-  function makeLink(o){
-    const L={};
-    const cfg=()=>jget(o.key,null);
-    const setCfg=c=>{ if(c) LS.set(o.key,JSON.stringify(c)); else LS.del(o.key); o.paint(); };
-    // آخر نسخة متّفق عليها بين الجهازين لكل ممثلة: تحدّد من عدّل منهما (مقارنة ثلاثية بدل «تعديل محلي» عام)
-    let base=jget(o.baseKey,{});
-    const saveBase=()=>LS.set(o.baseKey,JSON.stringify(base));
-    let running=false, queued=false, stopReq=false, timer=0;
-    const why=e=>{ const s=e&&e.status; if(s===401) return 'الرمز غير صحيح. تأكد من الرمز الظاهر في '+o.who+'.'; if(s===429) return 'محاولات خاطئة كثيرة. انتظر 10 دقائق ثم أعد المحاولة.';
-      return o.unreach; };
-    async function pair(h,k){ h=normHP(h,o.port); k=String(k||'').trim();
-      if(!/^[\w.-]+:\d{2,5}$/.test(h)) throw new Error('العنوان غير صحيح. اكتبه كما يظهر في '+o.who+'، مثل 192.168.1.20');
-      if(!/^\d{6}$/.test(k)) throw new Error('الرمز 6 أرقام كما يظهر في '+o.who);
-      let r; try{ r=await call({h,k},'GET','/hello'); }catch(e){ throw new Error(why(e)); }
-      if(!r||r.app!=='favlib') throw new Error('الجهاز على هذا العنوان ليس '+o.who);
-      const old=cfg()||{}; if(old.h!==h){ base={}; saveBase(); }
-      setCfg({h,k,auto:old.auto!==false,keys:!!old.keys,at:0,err:''}); return r; }
+  async function pair(h,k){ h=normH(h); k=String(k||'').trim();
+    if(!/^[\w.-]+:\d{2,5}$/.test(h)) throw new Error('العنوان غير صحيح. اكتبه كما يظهر على الشاشة، مثل 192.168.1.20');
+    if(!/^\d{6}$/.test(k)) throw new Error('الرمز 6 أرقام كما يظهر على الشاشة');
+    let r; try{ r=await call({h,k},'GET','/hello'); }catch(e){ throw new Error(why(e)); }
+    if(!r||r.app!=='favlib') throw new Error('الجهاز على هذا العنوان ليس تطبيق المفضلة');
+    const old=cfg()||{}; setCfg({h,k,auto:old.auto!==false,keys:!!old.keys,at:0,err:''}); return r; }
 
-    async function syncNow(manual){
-      const c=cfg(); if(!c){ if(manual) o.openPair(); return; }
-      if(running){ queued=true; if(manual) toast('المزامنة جارية…'); return; }
-      if(!manual&&navigator.onLine===false) return;
-      running=true; stopReq=false; o.paint();
-      const show=t=>{ if(manual) busy.show(t,()=>{ stopReq=true; }); };
-      const res={pulled:0,sent:0,photos:0,deleted:0};
-      try{
-        show('الاتصال بـ'+o.who+'…');
-        const hello=await call(c,'GET','/hello'); if(!hello||hello.app!=='favlib') throw new Error('ليس '+o.who);
-        const remote=hello.sig||{}, have=new Set(hello.photos||[]);
-        let mine=new Map(items.map(i=>[i.id,i]));
-        // 1) سحب ما عُدّل على الطرف الآخر (الشاشة فقط؛ الخادم لا يعدّل)
-        const mySig=new Map(items.map(i=>[i.id,sig(i)]));
-        // يُسحب ما عدّله الطرف الآخر وحده؛ إن عدّل الجهازان نفس الممثلة يفوز الأحدث (updated)
-        const pullIds=!o.twoWay?[]:Object.keys(remote).filter(id=>{ const cur=mine.get(id); if(!cur) return false; const ps=mySig.get(id), rs=remote[id][0], b=base[id]; if(ps===rs) return false;
-          if(b===ps) return true; if(b===rs) return false; return (remote[id][1]||0)>(cur.updated||0); });
-        for(let k=0;k<pullIds.length&&!stopReq;k+=25){ show('جلب تعديلات '+o.who+'…');
-          const r=await call(c,'POST','/get',{ids:pullIds.slice(k,k+25)}); const ch=[];
-          (r.items||[]).forEach(x=>{ const cur=mine.get(x.id); if(!cur||!x||typeof x!=='object'||minorRec(x)) return;
-            const m={...x,photos:cur.photos,thumb:cur.thumb}; LOCAL.forEach(f=>{ if(cur[f]!=null) m[f]=cur[f]; else delete m[f]; });
-            const i=items.indexOf(cur); if(i>=0){ items[i]=m; ch.push(m); } });
-          if(ch.length){ applying++; try{ await save(ch); }finally{ applying--; } res.pulled+=ch.length; } }
-        if(res.pulled){ mine=new Map(items.map(i=>[i.id,i])); render(); }
-        // 2) إرسال الصور الناقصة ثم الممثلات المتغيّرة
-        const pulledSet=new Set(pullIds);
-        const push=items.filter(i=>{ const r=remote[i.id]; return !pulledSet.has(i.id)&&(!r||r[0]!==sig(i)); });
-        let batch=[], bytes=0;
-        const flush=async()=>{ if(!batch.length) return; await call(c,'POST','/items',{items:batch}); res.sent+=batch.length; batch=[]; bytes=0; };
-        for(const it of push){ if(stopReq) break; show(`إرسال ${res.sent+batch.length+1} من ${push.length}…${res.photos?' ('+res.photos+' صورة)':''}`);
-          const w=wire(it);
-          for(const r of [...w.photos,w.thumb]){ if(!r||typeof r!=='object'||have.has(r.f)) continue;
-            let d=''; try{ d=r._src?await PB.toData(r._src):await FST.read(r); }catch{ continue; }
-            if(!d||!d.startsWith('data:')) continue;
-            await call(c,'PUT','/photo/'+r.f,d.slice(d.indexOf(',')+1)); have.add(r.f); res.photos++; }
-          const js=strip(w); batch.push(JSON.parse(js)); bytes+=js.length; if(batch.length>=20||bytes>1500000) await flush(); }
-        await flush();
-        // 3) الحذف والقوائم
-        if(!stopReq){ const gone=Object.keys(remote).filter(id=>!mine.has(id)); if(gone.length){ await call(c,'POST','/delete',{ids:gone}); res.deleted=gone.length; }
-          const prefs={}; META_KEYS.forEach(k=>{ const v=LS.get(k,null); if(v!=null) prefs[k]=v; }); if(c.keys&&o.twoWay) KEY_KEYS.forEach(k=>{ prefs[k]=LS.get(k,''); });
-          await call(c,'POST','/meta',{lists,wlists,prefs}); await call(c,'POST','/done',res); }
-        if(!stopReq){ base={}; items.forEach(i=>{ base[i.id]=sig(i); }); saveBase(); }
-        setCfg({...cfg(),at:Date.now(),err:''});
-        if(manual) await askNote(stopReq?'أُوقفت المزامنة.':`تمت المزامنة مع ${o.who} ✓\nأُرسلت ${res.sent} ممثلة و${res.photos} صورة${res.deleted?'، وحُذفت '+res.deleted:''}${res.pulled?'.\nجُلبت '+res.pulled+' تعديلات':''}.`);
-      }catch(e){ const msg=e&&e.status?why(e):(e&&e.message&&!/fetch|network|connect|timed? ?out|host|refused|unreachable/i.test(e.message)?e.message:why(e));
-        const cur=cfg(); if(cur) setCfg({...cur,err:msg}); if(manual) await askNote('تعذّرت المزامنة.\n'+msg);
-        else if(cur&&cur.auto!==false){ L.retry=Math.min((L.retry||30000)*2,15*60000); schedule(L.retry); }   // إعادة المحاولة بتباعد متزايد
-      }finally{ running=false; busy.hide(); o.paint(); if(queued){ queued=false; schedule(2500); } }
-      if(!cfg()||!cfg().err) L.retry=0;
-      return res; }
+  async function syncNow(manual){
+    const c=cfg(); if(!c){ if(manual) openPair(); return; }
+    if(running){ queued=true; if(manual) toast('المزامنة جارية…'); return; }
+    if(!manual&&navigator.onLine===false) return;
+    running=true; stopReq=false; paint();
+    const show=t=>{ if(manual) busy.show(t,()=>{ stopReq=true; }); };
+    const res={pulled:0,sent:0,photos:0,deleted:0};
+    try{
+      show('الاتصال بالشاشة…');
+      const hello=await call(c,'GET','/hello'); if(!hello||hello.app!=='favlib') throw new Error('ليس تطبيق المفضلة');
+      const remote=hello.sig||{}, have=new Set(hello.photos||[]);
+      let mine=new Map(items.map(i=>[i.id,i]));
+      // 1) سحب ما عُدّل على الشاشة (ما لم يُعدَّل في الجوال منذ آخر مزامنة)
+      const mySig=new Map(items.map(i=>[i.id,sig(i)]));
+      // يُسحب ما عدّلته الشاشة وحدها؛ إن عدّل الجهازان نفس الممثلة يفوز الأحدث (updated)
+      const pullIds=Object.keys(remote).filter(id=>{ const cur=mine.get(id); if(!cur) return false; const ps=mySig.get(id), rs=remote[id][0], b=base[id]; if(ps===rs) return false;
+        if(b===ps) return true; if(b===rs) return false; return (remote[id][1]||0)>(cur.updated||0); });
+      for(let k=0;k<pullIds.length&&!stopReq;k+=25){ show('جلب تعديلات الشاشة…');
+        const r=await call(c,'POST','/get',{ids:pullIds.slice(k,k+25)}); const ch=[];
+        (r.items||[]).forEach(x=>{ const cur=mine.get(x.id); if(!cur||!x||typeof x!=='object'||minorRec(x)) return;
+          const m={...x,photos:cur.photos,thumb:cur.thumb}; LOCAL.forEach(f=>{ if(cur[f]!=null) m[f]=cur[f]; else delete m[f]; });
+          const i=items.indexOf(cur); if(i>=0){ items[i]=m; ch.push(m); } });
+        if(ch.length){ applying=true; try{ await save(ch); }finally{ applying=false; } res.pulled+=ch.length; } }
+      if(res.pulled){ mine=new Map(items.map(i=>[i.id,i])); render(); }
+      // 2) إرسال الصور الناقصة ثم الممثلات المتغيّرة
+      const pulledSet=new Set(pullIds);
+      const push=items.filter(i=>{ const r=remote[i.id]; return !pulledSet.has(i.id)&&(!r||r[0]!==sig(i)); });
+      let batch=[], bytes=0;
+      const flush=async()=>{ if(!batch.length) return; await call(c,'POST','/items',{items:batch}); res.sent+=batch.length; batch=[]; bytes=0; };
+      for(const it of push){ if(stopReq) break; show(`إرسال ${res.sent+batch.length+1} من ${push.length}…${res.photos?' ('+res.photos+' صورة)':''}`);
+        const w=wire(it);
+        for(const r of [...w.photos,w.thumb]){ if(!r||typeof r!=='object'||have.has(r.f)) continue;
+          let d=''; try{ d=r._src?await PB.toData(r._src):await FST.read(r); }catch{ continue; }
+          if(!d||!d.startsWith('data:')) continue;
+          await call(c,'PUT','/photo/'+r.f,d.slice(d.indexOf(',')+1)); have.add(r.f); res.photos++; }
+        const js=strip(w); batch.push(JSON.parse(js)); bytes+=js.length; if(batch.length>=20||bytes>1500000) await flush(); }
+      await flush();
+      // 3) الحذف والقوائم
+      if(!stopReq){ const gone=Object.keys(remote).filter(id=>!mine.has(id)); if(gone.length){ await call(c,'POST','/delete',{ids:gone}); res.deleted=gone.length; }
+        const prefs={}; META_KEYS.forEach(k=>{ const v=LS.get(k,null); if(v!=null) prefs[k]=v; }); if(c.keys) KEY_KEYS.forEach(k=>{ prefs[k]=LS.get(k,''); });
+        await call(c,'POST','/meta',{lists,wlists,prefs}); await call(c,'POST','/done',res); }
+      if(!stopReq){ base={}; items.forEach(i=>{ base[i.id]=sig(i); }); saveBase(); }
+      setCfg({...cfg(),at:Date.now(),err:''});
+      if(manual) await askNote(stopReq?'أُوقفت المزامنة.':`تمت المزامنة مع الشاشة ✓\nأُرسلت ${res.sent} ممثلة و${res.photos} صورة${res.deleted?'، وحُذفت '+res.deleted:''}${res.pulled?'.\nجُلبت '+res.pulled+' تعديلات من الشاشة':''}.`);
+    }catch(e){ const msg=e&&e.status?why(e):(e&&e.message&&!/fetch|network|connect|timed? ?out|host|refused|unreachable/i.test(e.message)?e.message:why(e));
+      const cur=cfg(); if(cur) setCfg({...cur,err:msg}); if(manual) await askNote('تعذّرت المزامنة.\n'+msg);
+    }finally{ running=false; busy.hide(); paint(); if(queued){ queued=false; schedule(2500); } }
+    return res; }
 
-    function schedule(ms){ const c=cfg(); if(!c||c.auto===false) return; clearTimeout(timer); timer=setTimeout(()=>syncNow(false),ms==null?5000:ms); }
-    const onTV=()=>!!(window.TVApp&&TVApp.on);
-    HOOKS.saved.push(()=>{ if(applying||!cfg()||onTV()) return; schedule(); });
-    HOOKS.deleted.push(()=>{ if(cfg()&&!onTV()) schedule(); });
-    HOOKS.meta.push(()=>{ if(cfg()&&!onTV()) schedule(); });
-    if(IS_NATIVE){ try{ NATIVE.App.addListener('appStateChange',s=>{ if(s&&s.isActive&&cfg()&&!onTV()) schedule(1500); }); }catch{} }
-    setTimeout(()=>{ if(cfg()&&!onTV()) schedule(0); },8000);
-    Object.assign(L,{cfg,setCfg,pair,syncNow,schedule,stop:()=>{ stopReq=true; },get running(){ return running; }});
-    return L; }
-  let applying=0;
-  const TVL=makeLink({key:'vkte_sync_tv',baseKey:'vkte_sync_base',port:8765,who:'الشاشة',twoWay:true,paint:()=>paint(),openPair:()=>openPair(),
-    unreach:'لا يمكن الوصول إلى الشاشة. تأكد أن تطبيق المفضلة مفتوح على الشاشة، وأن الجوال والشاشة على نفس شبكة Wi-Fi.'});
-  const cfg=TVL.cfg, setCfg=TVL.setCfg, pair=TVL.pair, syncNow=TVL.syncNow, schedule=TVL.schedule;
-  // خادم Favorites Hub على الكمبيوتر: مصدر إضافة Favorites في Nuvio (اتجاه واحد: الجوال ← الخادم)
-  const HUB=makeLink({key:'vkte_sync_hub',baseKey:'vkte_sync_hub_base',port:7710,who:'خادم Favorites Hub',twoWay:false,paint:()=>hubPaint(),openPair:()=>hubPair(),
-    unreach:'لا يمكن الوصول إلى خادم Favorites Hub. تأكد أنه يعمل على الكمبيوتر، وأن الجوال والكمبيوتر على نفس شبكة Wi-Fi.'});
+  function schedule(ms){ const c=cfg(); if(!c||c.auto===false) return; clearTimeout(timer); timer=setTimeout(()=>syncNow(false),ms==null?5000:ms); }
+  HOOKS.saved.push(()=>{ if(applying||!cfg()||(window.TVApp&&TVApp.on)) return; schedule(); });
+  HOOKS.deleted.push(()=>{ if(cfg()&&!(window.TVApp&&TVApp.on)) schedule(); });
+  HOOKS.meta.push(()=>{ if(cfg()&&!(window.TVApp&&TVApp.on)) schedule(); });
 
   // ---------- رابط favlib://pair (من مسح رمز QR بكاميرا الجوال) ----------
   async function handleUrl(url){ if(!url||!/^favlib:/i.test(url)) return; let u; try{ u=new URL(url.replace(/^favlib:\/\//i,'http://x/')); }catch{ return; }
@@ -176,12 +157,13 @@ const Sync=(()=>{
     if(!(await askConfirm('ربط هذا الجوال بالشاشة ('+normH(h)+')؟\nستُرسل مكتبتك إليها الآن، وبعدها يصلها أي تعديل تلقائيًا.','ربط ومزامنة'))) return;
     busy.show('الاتصال بالشاشة…'); try{ await pair(h,k); }catch(e){ busy.hide(); await askNote(e.message); return; } busy.hide(); syncNow(true); }
   if(IS_NATIVE){ try{ NATIVE.App.addListener('appUrlOpen',e=>handleUrl(e&&e.url)); NATIVE.App.getLaunchUrl().then(r=>{ if(r&&r.url) setTimeout(()=>handleUrl(r.url),1500); }).catch(()=>{});
- }catch{} }
+      NATIVE.App.addListener('appStateChange',s=>{ if(s&&s.isActive&&cfg()) schedule(1500); }); }catch{} }
+  setTimeout(()=>{ if(cfg()&&!(window.TVApp&&TVApp.on)) schedule(0); },8000);
 
   // ---------- واجهة الجوال ----------
   const ago=t=>{ if(!t) return 'لم تتم بعد'; const m=Math.round((Date.now()-t)/6e4); if(m<1) return 'الآن'; if(m<60) return 'قبل '+m+' دقيقة'; const h=Math.round(m/60); if(h<24) return 'قبل '+h+' ساعة'; return 'قبل '+Math.round(h/24)+' يوم'; };
-  function statusTxt(){ const c=cfg(); if(!c) return 'غير مربوط بشاشة'; if(TVL.running) return 'جارٍ المزامنة…'; if(c.err) return '⚠ '+c.err; return 'مربوط بالشاشة '+c.h.replace(/:8765$/,'')+' · آخر مزامنة '+ago(c.at); }
-  function paint(){ const el=$('syStat'); if(el) el.textContent=statusTxt(); const b=document.querySelector('[data-tool="sync"] small'); if(b) b.textContent=cfg()?(TVL.running?'جارٍ المزامنة…':cfg().err?'غير متصلة':'مربوطة · '+ago(cfg().at)):'شاهد مكتبتك على التلفاز'; }
+  function statusTxt(){ const c=cfg(); if(!c) return 'غير مربوط بشاشة'; if(running) return 'جارٍ المزامنة…'; if(c.err) return '⚠ '+c.err; return 'مربوط بالشاشة '+c.h.replace(/:8765$/,'')+' · آخر مزامنة '+ago(c.at); }
+  function paint(){ const el=$('syStat'); if(el) el.textContent=statusTxt(); const b=document.querySelector('[data-tool="sync"] small'); if(b) b.textContent=cfg()?(running?'جارٍ المزامنة…':cfg().err?'غير متصلة':'مربوطة · '+ago(cfg().at)):'شاهد مكتبتك على التلفاز'; }
   async function openPair(){
     const r=await askShow(`<div class="fh"><h2>📺 ربط بالشاشة</h2><button class="ib" id="aNo" aria-label="إغلاق">${icon('x')}</button></div>
       <ol class="sy-steps"><li>ثبّت تطبيق المفضلة على شاشة Android TV وافتحه.</li><li>في الشاشة: القائمة الجانبية ← <b>اتصال بالجوال</b>.</li><li><b>امسح رمز QR</b> بكاميرا الجوال (الأسهل)، أو اكتب العنوان والرمز هنا:</li></ol>
@@ -213,42 +195,8 @@ const Sync=(()=>{
     const bk=[...m.querySelectorAll('details.sec')][2]; m.insertBefore(d,bk||m.lastElementChild);
     $('syOpen').onclick=()=>{ closeOv('ovSet'); openPanel(); }; $('bSet').addEventListener('click',()=>{ $('syStat2').textContent=statusTxt(); });
   }catch(e){ console.warn('sync ui',e); }
-
-  // ---------- Nuvio (خادم Favorites Hub على الكمبيوتر) ----------
-  function hubTxt(){ const c=HUB.cfg(); if(!c) return 'غير مربوط'; if(HUB.running) return 'جارٍ المزامنة…'; if(c.err) return '⚠ '+c.err; return 'مربوط بالخادم '+c.h.replace(/:7710$/,'')+' · آخر مزامنة '+ago(c.at); }
-  function hubPaint(){ const a=$('hbStat'), b=$('hbStat2'); if(a) a.textContent=hubTxt(); if(b) b.textContent=hubTxt(); }
-  async function hubPair(){
-    const c=HUB.cfg()||{};
-    const r=await askShow(`<div class="fh"><h2>🎬 ربط بـ Nuvio</h2><button class="ib" id="aNo" aria-label="إغلاق">${icon('x')}</button></div>
-      <ol class="sy-steps"><li>شغّل <b>Favorites Hub</b> على الكمبيوتر وافتح لوحته (http://127.0.0.1:7710).</li><li>اكتب هنا العنوان والرمز الظاهرين في قسم «المزامنة» في اللوحة.</li><li>أضف رابط الإضافة من اللوحة إلى Nuvio مرة واحدة.</li></ol>
-      <label>عنوان الكمبيوتر</label><input class="in" id="hbH" dir="ltr" inputmode="decimal" placeholder="192.168.1.10" value="${esc(c.h?c.h.replace(/:7710$/,''):'')}" autocomplete="off">
-      <label>الرمز (6 أرقام)</label><input class="in" id="hbK" dir="ltr" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="off">
-      <p class="src" id="hbMsg" style="margin-top:8px;white-space:pre-line"></p>
-      <div class="actions"><button class="btn gold" id="hbGo">ربط ومزامنة</button></div>`,(m,done)=>{
-      $('aNo').onclick=()=>done(null);
-      $('hbGo').onclick=async()=>{ const b=$('hbGo'); b.disabled=true; $('hbMsg').textContent='جارٍ الاتصال…';
-        try{ await HUB.pair($('hbH').value,$('hbK').value); done(true); }catch(e){ $('hbMsg').textContent=e.message; b.disabled=false; } };
-      $('hbK').onkeydown=e=>{ if(e.key==='Enter') $('hbGo').click(); }; });
-    if(r) HUB.syncNow(true); }
-  function hubPanel(){ const c=HUB.cfg();
-    askShow(`<div class="fh"><h2>🎬 Nuvio</h2><button class="ib" id="aNo" aria-label="إغلاق">${icon('x')}</button></div>
-      <p class="src" style="margin-bottom:10px">تظهر مكتبتك داخل Nuvio كإضافة اسمها Favorites (ممثلاتك وأعمالهن ومصادر Real-Debrid). التطبيق يرسل كل تعديل تلقائيًا إلى خادم Favorites Hub على الكمبيوتر، والخادم يبقى متاحًا لـ Nuvio حتى لو أغلقت التطبيق.</p>
-      <div class="sy-card"><b id="hbStat">${esc(hubTxt())}</b></div>
-      ${c?`<label class="ck"><input type="checkbox" id="hbAuto" ${c.auto!==false?'checked':''}> مزامنة تلقائية عند كل تعديل</label>`:''}
-      <div class="actions">${c?`<button class="btn danger" id="hbOff">فصل</button><button class="btn" id="hbRe">تغيير الخادم</button><button class="btn gold" id="hbNow">مزامنة الآن</button>`:`<button class="btn gold" id="hbRe">ربط</button>`}</div>`,(m,done)=>{
-      $('aNo').onclick=()=>done(null);
-      $('hbRe').onclick=()=>{ done(null); hubPair(); };
-      if($('hbNow')) $('hbNow').onclick=()=>{ done(null); HUB.syncNow(true); };
-      if($('hbOff')) $('hbOff').onclick=async()=>{ done(null); if(await askConfirm('فصل التطبيق عن خادم Nuvio؟ ستتوقف المزامنة، والمكتبة على الخادم تبقى كما هي (احذفها من لوحة الخادم إن أردت).','فصل',true)) HUB.setCfg(null); };
-      if($('hbAuto')) $('hbAuto').onchange=e=>HUB.setCfg({...HUB.cfg(),auto:e.target.checked}); }); }
-  try{ // قسم في الإعدادات
-    const m=document.querySelector('#ovSet .modal'), d=document.createElement('details'); d.className='sec';
-    d.innerHTML='<summary>🎬 Nuvio</summary><div class="secb"><p class="src" id="hbStat2"></p><div class="actions start"><button class="btn gold" id="hbOpen">فتح</button></div></div>';
-    const sy=$('syOpen'), after=sy&&sy.closest('details'); m.insertBefore(d,after?after.nextSibling:m.lastElementChild);
-    $('hbOpen').onclick=()=>{ closeOv('ovSet'); hubPanel(); }; $('bSet').addEventListener('click',hubPaint);
-  }catch(e){ console.warn('hub ui',e); }
   if(typeof Home!=='undefined'&&Home.TOOL) Home.TOOL.sync=openPanel;
   setTimeout(paint,500);
-  return {startTV,tvInfo,newCode,handle,syncNow,pair,openPanel,openPair,handleUrl,sig,wire,cfg,hub:HUB,hubPanel,hubPair,set transport(f){ transport=f; },get running(){ return TVL.running; }};
+  return {startTV,tvInfo,newCode,handle,syncNow,pair,openPanel,openPair,handleUrl,sig,wire,cfg,set transport(f){ transport=f; },get running(){ return running; }};
 })();
 window.Sync=Sync;

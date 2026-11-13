@@ -7,7 +7,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "serve": "node scripts/serve.mjs",
-    "test": "node tests/run.mjs && node tests/native.mjs",
+    "test": "node tests/run.mjs && node tests/native.mjs && node tests/tv.mjs",
     "android:prepare": "npm run build && (npx cap add android || true) && node scripts/patch-android.mjs && npx cap sync android",
     "ios:prepare": "npm run build && (npx cap add ios || true) && node scripts/patch-ios.mjs && npx cap sync ios"
   },
@@ -17,7 +17,8 @@
     "@capacitor/core": "^7.4.0",
     "@capacitor/filesystem": "^7.0.0",
     "@capacitor/ios": "^7.4.0",
-    "@capacitor/share": "^7.0.0"
+    "@capacitor/share": "^7.0.0",
+    "qrcode-generator": "^1.4.4"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.0",

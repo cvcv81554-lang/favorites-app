@@ -53,7 +53,7 @@ function gridNext(cur,k){ if(!cur.classList||!cur.classList.contains('card')||sc
   return null; }
 function firstFocus(){ const sc=scope(); if(sc===document.body){ const c=document.querySelector('.card'); if(c&&vis(c)) return c; }
   return cands()[0]||cands(true)[0]; }
-function ensureFocus(){ if(!on) return; const sc=scope(), a=document.activeElement; if(a&&a!==document.body&&(sc.contains(a)||navOk(sc,a))&&vis(a)){ mark(a); return; } const f=firstFocus(); if(f) focusEl(f,false,scope()===document.body&&window.scrollY<5); }
+function ensureFocus(){ if(!on||(window.TVApp&&TVApp.on)) return; const sc=scope(), a=document.activeElement; if(a&&a!==document.body&&(sc.contains(a)||navOk(sc,a))&&vis(a)){ mark(a); return; } const f=firstFocus(); if(f) focusEl(f,false,scope()===document.body&&window.scrollY<5); }
 function closeTop(){ const open=!!document.querySelector('.overlay.show,#lbx.show'); if(open) document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true})); return open; }
 /* رجوع: يغلق النافذة؛ وفي الرئيسية يعود للأعلى أولًا، وبعدها فقط يخرج من التطبيق */
 function backHome(){ if(document.querySelector('.overlay.show,#lbx.show')) return closeTop();
@@ -61,7 +61,7 @@ function backHome(){ if(document.querySelector('.overlay.show,#lbx.show')) retur
   return false; }
 window.__tvBack=()=>{ try{ return on?backHome():false; }catch{ return false; } };
 let lastKey=0;
-document.addEventListener('keydown',e=>{ if(!on||e.ctrlKey||e.metaKey||e.altKey) return;
+document.addEventListener('keydown',e=>{ if(!on||(window.TVApp&&TVApp.on)||e.ctrlKey||e.metaKey||e.altKey) return;
   const k=e.key, t=e.target, tag=t&&t.tagName||'', typing=(tag==='INPUT'&&!/^(checkbox|radio|button|submit|range|color|file)$/.test(t.type))||tag==='TEXTAREA';
   if(k==='Escape'&&!e.isTrusted) return;
   if(k==='GoBack'||k==='BrowserBack'||(k==='Backspace'&&!typing)){ e.preventDefault(); if(document.querySelector('.overlay.show,#lbx.show')) closeTop(); else backHome(); return; }
@@ -82,7 +82,7 @@ document.addEventListener('keydown',e=>{ if(!on||e.ctrlKey||e.metaKey||e.altKey)
     if(k==='ArrowDown'&&scope()===document.body&&typeof renderMore==='function'&&render&&render.list&&render.n<render.list.length){ e.preventDefault(); e.stopImmediatePropagation(); renderMore(); requestAnimationFrame(()=>{ const n2=pick(cur,k,cands(true)); if(n2) focusEl(n2); }); return; }
     e.preventDefault(); return; }
   if((k==='Enter'||k==='NumpadEnter')&&t&&!NATIVE.test(tag)&&t!==document.body&&t.classList&&(t.classList.contains('tvf')||t.matches('#car img'))){ e.preventDefault(); t.click(); } },true);
-function apply(){ document.documentElement.classList.toggle('tv',on); document.documentElement.classList.toggle('tvlite',on); if(on) setTimeout(ensureFocus,300); else document.querySelectorAll('.tvf').forEach(x=>x.classList.remove('tvf')); }
+function apply(){ if(window.TVApp){ on?TVApp.start():TVApp.stop(); } document.documentElement.classList.toggle('tv',on); document.documentElement.classList.toggle('tvlite',on); if(on) setTimeout(ensureFocus,300); else document.querySelectorAll('.tvf').forEach(x=>x.classList.remove('tvf')); }
 apply();
 /* v28: إعادة بناء الشبكة لا تُفقد التركيز؛ نعيده لنفس البطاقة بدل القفز لأول بطاقة */
 if(on&&typeof render==='function'){ try{ const _render=render; render=function(a){ const f=document.activeElement, id=f&&f.classList&&f.classList.contains('card')?f.dataset.id:null; const r=_render.apply(this,arguments);

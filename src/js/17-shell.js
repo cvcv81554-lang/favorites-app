@@ -66,6 +66,7 @@ const busy={ show(t,onCancel){ $('busyT').textContent=t||''; const x=$('busyX');
     if(e.key==='b'||e.key==='B'||e.key==='ب') $('bBlur').click(); });
   // زر الرجوع في أندرويد/التلفاز: يغلق النافذة العلوية أو يرجع خطوة، وعند الرئيسية يصغّر التطبيق
   if(IS_NATIVE){ try{ NATIVE.App.addListener('backButton',()=>{
+    if(window.TVApp&&TVApp.on){ document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true})); return; }
     const had=!atRoot();
     document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));
     if(!had){ try{ NATIVE.App.minimizeApp(); }catch{ try{ NATIVE.App.exitApp(); }catch{} } } }); }catch(e){ console.warn('back',e); } }

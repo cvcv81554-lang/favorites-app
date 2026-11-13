@@ -171,50 +171,6 @@ ok('التصدير بصيغة التطبيق القديم', exported.app === 'vk
 ok('أخطاء الكونسول (جوال)', phone.errors.length === 0, phone.errors.slice(0, 4).join(' | '));
 await phone.ctx.close();
 
-// ---------- 4) التلفاز 1920×1080 بأسهم الكيبورد ----------
-for (const [tag, vp, dpr] of [['tv1080', { width: 1920, height: 1080 }, 1], ['tv540', { width: 960, height: 540 }, 2]]) {
-  const tv = await newPage(vp, dpr, '?tv=1'); const T = tv.page;
-  await importSample(T); await settle(T, 2600); await T.waitForSelector('body.ready'); await T.evaluate(() => document.getElementById('nHome').click()); await T.waitForSelector('.card'); await settle(T, 700);
-  ok(tag + ': وضع التلفاز مفعّل', await T.evaluate(() => document.documentElement.classList.contains('tv')));
-  await T.keyboard.press('ArrowDown'); await settle(T, 300);
-  const f0 = await T.evaluate(() => { const a = document.activeElement; return a && a.classList.contains('card') ? a.dataset.id : (a ? a.tagName + '#' + a.id : ''); });
-  await T.keyboard.press('ArrowLeft'); await T.keyboard.press('ArrowLeft'); await T.keyboard.press('ArrowDown'); await settle(T, 300);
-  const f1 = await T.evaluate(() => { const a = document.activeElement; return a && a.classList.contains('card') ? a.dataset.id : ''; });
-  ok(tag + ': الأسهم تنقل التركيز بين البطاقات', !!f1 && f1 !== f0, f0 + ' → ' + f1);
-  ok(tag + ': حلقة التركيز ظاهرة', await T.evaluate(() => { const a = document.activeElement; return a.classList.contains('tvf') && parseFloat(getComputedStyle(a).outlineWidth) >= 3; }));
-  await shot(T, tag + '-01-home-focus');
-  // الرئيسية على التلفاز: التنقل بين الأرفف والوصول لشريط التنقل من داخل الصفحة
-  await T.evaluate(() => { document.getElementById('nDash').focus(); document.getElementById('nDash').click(); }); await settle(T, 600);
-  await T.keyboard.press('ArrowLeft'); await T.keyboard.press('ArrowDown'); await T.keyboard.press('ArrowDown'); await T.keyboard.press('ArrowLeft'); await settle(T, 300);
-  ok(tag + ': تنقل داخل الرئيسية', await T.evaluate(() => !!document.activeElement.closest('#ovHome')), await T.evaluate(() => document.activeElement.className));
-  await shot(T, tag + '-00-dashboard');
-  for (let k = 0; k < 12; k++) await T.keyboard.press('ArrowRight'); await settle(T, 250);
-  ok(tag + ': شريط التنقل في المتناول من داخل الصفحة', await T.evaluate(() => !!document.activeElement.closest('nav.dock')), await T.evaluate(() => document.activeElement.className));
-  await T.evaluate(() => document.getElementById('nHome').click()); await settle(T, 400); await T.evaluate(id => { const c = document.querySelector('.card[data-id="' + id + '"]'); if (c) { c.tabIndex = -1; c.focus(); c.classList.add('tvf'); } }, f1);
-  await T.keyboard.press('Enter'); await settle(T, 900);
-  ok(tag + ': OK يفتح الملف', await T.evaluate(() => document.getElementById('ovDetail').classList.contains('show')));
-  await shot(T, tag + '-02-detail');
-  await T.keyboard.press('ArrowDown'); await T.keyboard.press('ArrowDown'); await settle(T, 300);
-  ok(tag + ': التركيز داخل النافذة المفتوحة', await T.evaluate(() => !!document.activeElement.closest('#ovDetail')));
-  await T.keyboard.press('Escape'); await settle(T, 500);
-  ok(tag + ': رجوع يغلق النافذة ويعيد التركيز للبطاقة', await T.evaluate(id => !document.getElementById('ovDetail').classList.contains('show') && document.activeElement.dataset.id === id, f1), await T.evaluate(() => { const a = document.activeElement; return a.tagName + '.' + a.className + '#' + (a.dataset.id || a.id) + ' ov=' + [...document.querySelectorAll('.overlay.show')].map(o => o.id).join(','); }) + ' want=' + f1);
-  // إلى شريط التنقل ثم الأعمال
-  for (let k = 0; k < 8; k++) await T.keyboard.press('ArrowRight'); await settle(T, 250);
-  const inNav = await T.evaluate(() => !!document.activeElement.closest('nav.dock'));
-  ok(tag + ': سهم اليمين يصل شريط التنقل', inNav, await T.evaluate(() => document.activeElement.tagName + '#' + document.activeElement.id));
-  await T.evaluate(() => document.getElementById('nWorks').focus()); await T.keyboard.press('Enter'); await settle(T, 900); await shot(T, tag + '-03-works');
-  await T.keyboard.press('ArrowLeft'); await T.keyboard.press('ArrowDown'); await T.keyboard.press('ArrowDown'); await settle(T, 300);
-  ok(tag + ': تنقل داخل مركز الأعمال', await T.evaluate(() => !!document.activeElement.closest('#ovWorks')), await T.evaluate(() => document.activeElement.className));
-  await shot(T, tag + '-04-works-focus');
-  await T.evaluate(() => document.getElementById('bStats').click()); await settle(T, 1200); await shot(T, tag + '-05-stats');
-  await T.evaluate(() => { document.getElementById('nHome').click(); Gallery.playLibrary(); }); await settle(T, 1000); await shot(T, tag + '-06-slideshow');
-  const i0 = await T.evaluate(() => document.querySelector('#lbx .lc').textContent); await T.keyboard.press('ArrowLeft'); await settle(T, 500);
-  ok(tag + ': أسهم الريموت تقلّب الشرائح', await T.evaluate(() => document.querySelector('#lbx .lc').textContent) !== i0);
-  await T.keyboard.press('Escape'); await settle(T, 300);
-  await T.evaluate(() => document.getElementById('bSet').click()); await settle(T, 600); await shot(T, tag + '-07-settings'); await T.keyboard.press('Escape');
-  ok(tag + ': أخطاء الكونسول', tv.errors.length === 0, tv.errors.slice(0, 4).join(' | '));
-  await tv.ctx.close();
-}
-
+// ---------- 4) واجهة الشاشة والمزامنة: tests/tv.mjs ----------
 await browser.close(); server.close();
 console.log(results.join('\n')); console.log(failed ? `\n${failed} اختبار فشل` : '\nكل الاختبارات نجحت'); process.exit(failed ? 1 : 0);

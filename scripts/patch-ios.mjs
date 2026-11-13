@@ -21,6 +21,11 @@ setBool('UIRequiresFullScreen', false);
 const ALL = ['UIInterfaceOrientationPortrait', 'UIInterfaceOrientationLandscapeLeft', 'UIInterfaceOrientationLandscapeRight', 'UIInterfaceOrientationPortraitUpsideDown'];
 setArr('UISupportedInterfaceOrientations', ALL.slice(0, 3)); setArr('UISupportedInterfaceOrientations~ipad', ALL);
 pb('Delete :NSAppTransportSecurity'); pb('Add :NSAppTransportSecurity dict'); pb('Add :NSAppTransportSecurity:NSAllowsLocalNetworking bool true');
+// المزامنة مع الشاشة: اتصال HTTP على الشبكة المحلية + فتح التطبيق من رمز QR (favlib://)
+pb('Add :NSAppTransportSecurity:NSAllowsArbitraryLoads bool true');
+pb('Delete :NSLocalNetworkUsageDescription'); pb('Add :NSLocalNetworkUsageDescription string "لإرسال مكتبتك إلى تطبيق المفضلة على شاشتك في نفس الشبكة"');
+pb('Delete :CFBundleURLTypes'); pb('Add :CFBundleURLTypes array'); pb('Add :CFBundleURLTypes:0 dict'); pb('Add :CFBundleURLTypes:0:CFBundleURLName string com.favlib.app');
+pb('Add :CFBundleURLTypes:0:CFBundleURLSchemes array'); if (!pb('Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string favlib')) { console.error('تعذّر ضبط CFBundleURLTypes'); process.exit(1); }
 
 // الأيقونة (ملف واحد 1024) وشاشة البداية
 const assets = join(app, 'Assets.xcassets');

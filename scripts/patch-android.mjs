@@ -22,11 +22,13 @@ edit(mf, s => {
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />`);
   if (!s.includes('android:banner=')) s = s.replace(/<application\b/, '<application android:banner="@drawable/banner" android:usesCleartextTraffic="true" android:requestLegacyExternalStorage="true"');
+  // رابط favlib:// (مسح رمز QR من الشاشة يفتح التطبيق ويربطه)
+  if (!s.includes('android:scheme="favlib"')) s = s.replace(/(<\/intent-filter>)/, '$1\n            <intent-filter>\n                <action android:name="android.intent.action.VIEW" />\n                <category android:name="android.intent.category.DEFAULT" />\n                <category android:name="android.intent.category.BROWSABLE" />\n                <data android:scheme="favlib" />\n            </intent-filter>');
   if (!s.includes('LEANBACK_LAUNCHER')) s = s.replace(/(<category android:name="android\.intent\.category\.LAUNCHER"\s*\/>)/, '$1\n                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />');
   return s;
 });
 const m = readFileSync(mf, 'utf8');
-need(m.includes('LEANBACK_LAUNCHER') && m.includes('android:banner=') && m.includes('android.software.leanback') && m.includes('android.hardware.touchscreen'), 'AndroidManifest.xml');
+need(m.includes('android:scheme="favlib"') && m.includes('LEANBACK_LAUNCHER') && m.includes('android:banner=') && m.includes('android.software.leanback') && m.includes('android.hardware.touchscreen'), 'AndroidManifest.xml');
 
 // ---- الأيقونات و banner ----
 const src = join(root, 'resources', 'android');
@@ -43,40 +45,7 @@ edit(join(res, 'values', 'styles.xml'), s => s.replace(/@drawable\/splash\b/g, '
 
 // ---- الإضافة المحلية Shell + MainActivity ----
 const jdir = join(main, 'java', ...pkg.split('.')); mkdirSync(jdir, { recursive: true });
-writeFileSync(join(jdir, 'ShellPlugin.java'), `package ${pkg};
-
-import android.content.pm.PackageManager;
-import android.view.WindowManager;
-import com.getcapacitor.JSObject;
-import com.getcapacitor.Plugin;
-import com.getcapacitor.PluginCall;
-import com.getcapacitor.PluginMethod;
-import com.getcapacitor.annotation.CapacitorPlugin;
-
-/** كشف Android TV، وإخفاء المحتوى من قائمة التطبيقات الأخيرة (FLAG_SECURE). */
-@CapacitorPlugin(name = "Shell")
-public class ShellPlugin extends Plugin {
-    @PluginMethod
-    public void info(PluginCall call) {
-        PackageManager pm = getContext().getPackageManager();
-        boolean tv = pm.hasSystemFeature("android.software.leanback") || pm.hasSystemFeature("android.hardware.type.television") || !pm.hasSystemFeature("android.hardware.touchscreen");
-        JSObject ret = new JSObject();
-        ret.put("tv", tv);
-        ret.put("sdk", android.os.Build.VERSION.SDK_INT);
-        call.resolve(ret);
-    }
-
-    @PluginMethod
-    public void secure(PluginCall call) {
-        final boolean on = Boolean.TRUE.equals(call.getBoolean("on", true));
-        getActivity().runOnUiThread(() -> {
-            if (on) getActivity().getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
-            else getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
-            call.resolve();
-        });
-    }
-}
-`);
+writeFileSync(join(jdir, 'ShellPlugin.java'), readFileSync(join(root, 'resources', 'android', 'ShellPlugin.java'), 'utf8').replace(/__PKG__/g, pkg));
 writeFileSync(join(jdir, 'MainActivity.java'), `package ${pkg};
 
 import android.os.Bundle;

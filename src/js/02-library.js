@@ -158,7 +158,7 @@ async function fetchWorksFor(pdbId){ const out=[],seen=new Set(); let page=1,las
       const dur=+x.duration>0?(+x.duration>180?Math.round(+x.duration/60):Math.round(+x.duration)):0;
       const tgs=Array.isArray(x.tags)?x.tags.map(g=>typeof g==='string'?g:(g&&g.name)||'').filter(Boolean).slice(0,8):[];
       const u=typeof x.url==='string'&&/^https:\/\//i.test(x.url)?x.url:(x.slug?'https://theporndb.net/scenes/'+x.slug:'');
-      const wObj=normW([{t,s:String(siteOf(x)||'').trim(),...yd,p:posterOf(x),du:dur||undefined,ds:String(x.description||x.overview||'').slice(0,280),tg:tgs,u}])[0];
+      const wObj=normW([{t,s:String(siteOf(x)||'').trim(),...yd,p:posterOf(x),du:dur||undefined,ds:String(x.description||x.overview||'').slice(0,280),tg:tgs,u,ip:x.id!=null?String(x.id):''}])[0];
       if(wObj) out.push(wObj);
     });
     const mt=j.meta||j.pagination||{}; last=+mt.last_page||((j.data||[]).length>=100?page+1:page); page++;
@@ -171,7 +171,7 @@ function mergeWorks(old,fresh){ const out=normW(old).map(w=>({...w})); const idx
       if(!h.s&&f.s) h.s=f.s;
       if(!h.y&&f.y) h.y=f.y;
       if(!h.d&&f.d){ h.d=f.d; if(!h.y) h.y=f.d.slice(0,4); }
-      ['p','du','ds','u'].forEach(k=>{ if(!h[k]&&f[k]) h[k]=f[k]; });
+      ['p','du','ds','u','ip','is','im','tm'].forEach(k=>{ if(!h[k]&&f[k]) h[k]=f[k]; });
       if((!h.tg||!h.tg.length)&&f.tg&&f.tg.length) h.tg=f.tg;
       if(f.upc&&!h.w) h.upc=1;
     } else { const nw={...f,a:f.a||now}; idx.set(wkey(f.t),nw); add.push(nw); }
@@ -239,7 +239,7 @@ async function sdWorks(id){ const out=[],seen=new Set(); let page=1,pages=1,fiel
       const dur=+x.duration>0?(+x.duration>180?Math.round(+x.duration/60):Math.round(+x.duration)):0;
       const tgs=(x.tags||[]).map(g=>g&&g.name).filter(Boolean).slice(0,8);
       const u=x.id?'https://stashdb.org/scenes/'+x.id:'';
-      const wObj=normW([{t,s:String((x.studio&&x.studio.name)||'').trim(),...yd,p:ims[0]?ims[0].url:'',du:dur||undefined,ds:String(x.details||'').slice(0,280),tg:tgs,u}])[0];
+      const wObj=normW([{t,s:String((x.studio&&x.studio.name)||'').trim(),...yd,p:ims[0]?ims[0].url:'',du:dur||undefined,ds:String(x.details||'').slice(0,280),tg:tgs,u,is:x.id||''}])[0];
       if(wObj) out.push(wObj);
     });
     pages=Math.min(40,Math.ceil((q.count||0)/100)||1); page++;
@@ -261,7 +261,7 @@ async function sdUpcoming(){
     const touched=new Set();
     ((d.queryScenes&&d.queryScenes.scenes)||[]).forEach(s=>{
       const yd=ydOf(s.release_date||s.date||'');
-      const wObj={t:s.title,s:(s.studio&&s.studio.name)||'',...yd,upc:1,p:(s.images&&s.images[0]&&s.images[0].url)||'',u:s.id?'https://stashdb.org/scenes/'+s.id:''};
+      const wObj={t:s.title,s:(s.studio&&s.studio.name)||'',...yd,upc:1,p:(s.images&&s.images[0]&&s.images[0].url)||'',u:s.id?'https://stashdb.org/scenes/'+s.id:'',is:s.id||''};
       (s.performers||[]).forEach(pa=>{
         const it=pa&&pa.performer&&map.get(pa.performer.id);
         if(it){ const r=mergeWorks(it.works,[wObj]); if(r.n){ it.works=r.list; added+=r.n; touched.add(it); } }

@@ -82,6 +82,11 @@ const normW=w=>{
     if(Array.isArray(x.tg)&&x.tg.length) o.tg=[...new Set(x.tg.map(t=>String(t||'').trim()).filter(Boolean))].slice(0,10);
     if(x.u&&/^https:\/\//i.test(String(x.u))) o.u=String(x.u).trim();
     if(Array.isArray(x.ls)&&x.ls.length) o.ls=[...new Set(x.ls.filter(Boolean))];
+    // معرّفات قواعد البيانات (لتشغيل VKTE ONLY عبر الإضافات): تُحفظ كلها معًا
+    if(x.ip&&/^[A-Za-z0-9-]{1,64}$/.test(String(x.ip))) o.ip=String(x.ip);
+    if(x.is&&/^[A-Za-z0-9-]{1,64}$/.test(String(x.is))) o.is=String(x.is);
+    if(x.im&&/^tt\d{5,10}$/.test(String(x.im))) o.im=String(x.im);
+    if(x.tm&&/^\d{1,10}$/.test(String(x.tm))) o.tm=String(x.tm);
     return o;
   }).filter(x=>x.t);
   return String(w||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{

@@ -21,13 +21,13 @@ const Sync=(()=>{
   const strip=o=>JSON.stringify(o,(k,v)=>k==='_src'?undefined:v);
   const sig=it=>{ const o=wire(it); delete o.updated; delete o.thumb; delete o.thumbV; return h2(strip(o)); };
   const unref=v=>{ if(v&&typeof v==='object'&&typeof v.f==='string'&&PH_RE.test(v.f)) return FST.on?FST.url({f:v.f,s:+v.s||0,t:String(v.t||'image/jpeg')}):'';
-    return typeof v==='string'&&(/^https?:\/\//i.test(v)||/^data:image\//i.test(v))?v:''; };
+    return safeImg(v)?v:''; };
 
   // =====================================================================
   // الشاشة: الاستقبال
   // =====================================================================
   const TV={ ip:'', port:0, running:false, err:'', started:false };
-  const code=()=>{ let c=LS.get('vkte_sync_code',''); if(!/^\d{6}$/.test(c)){ c=String(100000+Math.floor(Math.random()*900000)); LS.set('vkte_sync_code',c); } return c; };
+  const code=()=>{ let c=LS.get('vkte_sync_code',''); if(!/^\d{6}$/.test(c)){ c=String(100000+(crypto.getRandomValues(new Uint32Array(1))[0]%900000)); /* مولّد عشوائي آمن */ LS.set('vkte_sync_code',c); } return c; };
   const ok=o=>({status:200,body:JSON.stringify(o)});
   const bad=(s,m)=>({status:s,body:JSON.stringify({error:m})});
   async function photoNames(){ if(!FST.on) return []; await FST.init();
@@ -38,18 +38,18 @@ const Sync=(()=>{
     if(path==='/hello') return ok({app:'favlib',v:1,name:'الشاشة',count:items.length,sig:Object.fromEntries(items.map(i=>[i.id,[sig(i),i.updated||0]])),photos:await photoNames()});
     if(path==='/get'&&m==='POST'){ const ids=new Set((b&&b.ids)||[]); return ok({items:items.filter(i=>ids.has(i.id)).map(i=>JSON.parse(strip(wire(i))))}); }
     if(path==='/items'&&m==='POST'){ const arr=Array.isArray(b&&b.items)?b.items:[]; const out=[];
-      for(const x of arr){ if(!x||typeof x!=='object'||typeof x.id!=='string'||x.id.length>128||typeof x.name!=='string'||!x.name.trim()||minorRec(x)) continue;
-        x.photos=(Array.isArray(x.photos)?x.photos:[]).map(unref).filter(Boolean).slice(0,MAXPH); x.thumb=unref(x.thumb)||''; normItem(x);
+      for(const x of arr){ if(!x||typeof x!=='object'||!safeId(x.id)||typeof x.name!=='string'||!x.name.trim()||minorRec(x)) continue;
+        x.photos=(Array.isArray(x.photos)?x.photos:[]).map(unref).filter(Boolean).slice(0,MAXPH); x.thumb=unref(x.thumb)||''; safeWorks(x.works); normItem(x);
         const k=items.findIndex(i=>i.id===x.id); if(k>=0){ const cur=items[k]; LOCAL.forEach(f=>{ if(cur[f]!=null) x[f]=cur[f]; }); items[k]=x; } else items.push(x); out.push(x); }
-      applyQ=applyQ.then(()=>DB.put(out)).catch(e=>console.warn('sync put',e)); await applyQ; _wCache=null; HOOKS.saved.forEach(f=>{ try{ f(out); }catch{} });
+      const put=applyQ.then(()=>DB.put(out)); applyQ=put.catch(()=>{}); await put; _wCache=null; HOOKS.saved.forEach(f=>{ try{ f(out); }catch{} });
       return ok({ok:true,n:out.length}); }
     if(path==='/delete'&&m==='POST'){ const ids=new Set((b&&b.ids)||[]); const gone=items.filter(i=>ids.has(i.id)); items=items.filter(i=>!ids.has(i.id)); _wCache=null;
-      for(const g of gone){ try{ await DB.del(g.id); }catch{} } return ok({ok:true,n:gone.length}); }
-    if(path==='/meta'&&m==='POST'){ if(b){ if(Array.isArray(b.lists)){ lists=b.lists.filter(L=>L&&L.id&&L.name); LS.set('vkte_lists',JSON.stringify(lists)); }
-        if(Array.isArray(b.wlists)){ wlists=b.wlists.filter(L=>L&&L.id&&L.name); LS.set('vkte_wlists',JSON.stringify(wlists)); }
+      for(const g of gone) await DB.del(g.id); return ok({ok:true,n:gone.length}); }
+    if(path==='/meta'&&m==='POST'){ if(b){ if(Array.isArray(b.lists)){ lists=b.lists.filter(L=>L&&safeId(L.id)&&typeof L.name==='string'&&L.name); LS.set('vkte_lists',JSON.stringify(lists)); }
+        if(Array.isArray(b.wlists)){ wlists=b.wlists.filter(L=>L&&safeId(L.id)&&typeof L.name==='string'&&L.name); LS.set('vkte_wlists',JSON.stringify(wlists)); }
         const p=b.prefs||{}; [...META_KEYS,...KEY_KEYS].forEach(k=>{ if(typeof p[k]==='string') LS.set(k,p[k]); }); _wCache=null; metaChanged(); }
       return ok({ok:true}); }
-    if(path==='/done'&&m==='POST'){ const info={at:Date.now(),...(b||{})}; LS.set('vkte_sync_last',JSON.stringify(info)); render();
+    if(path==='/done'&&m==='POST'){ const n=v=>Math.max(0,Math.min(1e7,parseInt(v,10)||0)); const info={at:Date.now(),sent:n(b&&b.sent),photos:n(b&&b.photos),deleted:n(b&&b.deleted),pulled:n(b&&b.pulled)}; LS.set('vkte_sync_last',JSON.stringify(info)); render();
       if(window.TVApp&&TVApp.on) TVApp.refresh(true);
       const parts=[]; if(info.sent) parts.push(info.sent+' ممثلة'); if(info.photos) parts.push(info.photos+' صورة'); if(info.deleted) parts.push('حُذفت '+info.deleted);
       if(parts.length) toast('📲 وصلت مزامنة من الجوال: '+parts.join('، ')); return ok({ok:true}); }
@@ -116,34 +116,38 @@ const Sync=(()=>{
         let mine=new Map(items.map(i=>[i.id,i]));
         // 1) سحب ما عُدّل على الطرف الآخر (الشاشة فقط؛ الخادم لا يعدّل)
         const mySig=new Map(items.map(i=>[i.id,sig(i)]));
+        // المرجع الجديد = ما اتفق عليه الطرفان فعلًا (لا حالة الجوال في نهاية المزامنة، كي لا يُعدّ تعديل أثناءها «متفقًا عليه»)
+        const known={}; Object.keys(remote).forEach(id=>{ if(mySig.get(id)===remote[id][0]) known[id]=remote[id][0]; });
         // يُسحب ما عدّله الطرف الآخر وحده؛ إن عدّل الجهازان نفس الممثلة يفوز الأحدث (updated)
         const pullIds=!o.twoWay?[]:Object.keys(remote).filter(id=>{ const cur=mine.get(id); if(!cur) return false; const ps=mySig.get(id), rs=remote[id][0], b=base[id]; if(ps===rs) return false;
           if(b===ps) return true; if(b===rs) return false; return (remote[id][1]||0)>(cur.updated||0); });
         for(let k=0;k<pullIds.length&&!stopReq;k+=25){ show('جلب تعديلات '+o.who+'…');
           const r=await call(c,'POST','/get',{ids:pullIds.slice(k,k+25)}); const ch=[];
-          (r.items||[]).forEach(x=>{ const cur=mine.get(x.id); if(!cur||!x||typeof x!=='object'||minorRec(x)) return;
+          (r.items||[]).forEach(x=>{ const cur=mine.get(x.id); if(!cur||!x||typeof x!=='object'||!safeId(x.id)||minorRec(x)||sig(cur)!==mySig.get(x.id)) return;
+            safeWorks(x.works);
             const m={...x,photos:cur.photos,thumb:cur.thumb}; LOCAL.forEach(f=>{ if(cur[f]!=null) m[f]=cur[f]; else delete m[f]; });
             const i=items.indexOf(cur); if(i>=0){ items[i]=m; ch.push(m); } });
-          if(ch.length){ applying++; try{ await save(ch); }finally{ applying--; } res.pulled+=ch.length; } }
+          if(ch.length){ applying++; let okS=false; try{ okS=await save(ch); }finally{ applying--; } if(okS){ res.pulled+=ch.length; ch.forEach(x=>{ known[x.id]=sig(x); }); } } }
         if(res.pulled){ mine=new Map(items.map(i=>[i.id,i])); render(); }
         // 2) إرسال الصور الناقصة ثم الممثلات المتغيّرة
         const pulledSet=new Set(pullIds);
         const push=items.filter(i=>{ const r=remote[i.id]; return !pulledSet.has(i.id)&&(!r||r[0]!==sig(i)); });
         let batch=[], bytes=0;
-        const flush=async()=>{ if(!batch.length) return; await call(c,'POST','/items',{items:batch}); res.sent+=batch.length; batch=[]; bytes=0; };
+        const sentSig=[];
+        const flush=async()=>{ if(!batch.length) return; await call(c,'POST','/items',{items:batch}); res.sent+=batch.length; sentSig.splice(0).forEach(([id,s])=>{ known[id]=s; }); batch=[]; bytes=0; };
         for(const it of push){ if(stopReq) break; show(`إرسال ${res.sent+batch.length+1} من ${push.length}…${res.photos?' ('+res.photos+' صورة)':''}`);
           const w=wire(it);
           for(const r of [...w.photos,w.thumb]){ if(!r||typeof r!=='object'||have.has(r.f)) continue;
             let d=''; try{ d=r._src?await PB.toData(r._src):await FST.read(r); }catch{ continue; }
             if(!d||!d.startsWith('data:')) continue;
             await call(c,'PUT','/photo/'+r.f,d.slice(d.indexOf(',')+1)); have.add(r.f); res.photos++; }
-          const js=strip(w); batch.push(JSON.parse(js)); bytes+=js.length; if(batch.length>=20||bytes>1500000) await flush(); }
+          const js=strip(w); batch.push(JSON.parse(js)); sentSig.push([it.id,sig(it)]); bytes+=js.length; if(batch.length>=20||bytes>1500000) await flush(); }
         await flush();
         // 3) الحذف والقوائم
         if(!stopReq){ const gone=Object.keys(remote).filter(id=>!mine.has(id)); if(gone.length){ await call(c,'POST','/delete',{ids:gone}); res.deleted=gone.length; }
           const prefs={}; META_KEYS.forEach(k=>{ const v=LS.get(k,null); if(v!=null) prefs[k]=v; }); if(c.keys&&o.twoWay) KEY_KEYS.forEach(k=>{ prefs[k]=LS.get(k,''); });
           await call(c,'POST','/meta',{lists,wlists,prefs}); await call(c,'POST','/done',res); }
-        if(!stopReq){ base={}; items.forEach(i=>{ base[i.id]=sig(i); }); saveBase(); }
+        if(!stopReq){ base={}; items.forEach(i=>{ if(known[i.id]) base[i.id]=known[i.id]; }); saveBase(); }
         setCfg({...cfg(),at:Date.now(),err:''});
         if(manual) await askNote(stopReq?'أُوقفت المزامنة.':`تمت المزامنة مع ${o.who} ✓\nأُرسلت ${res.sent} ممثلة و${res.photos} صورة${res.deleted?'، وحُذفت '+res.deleted:''}${res.pulled?'.\nجُلبت '+res.pulled+' تعديلات':''}.`);
       }catch(e){ const msg=e&&e.status?why(e):(e&&e.message&&!/fetch|network|connect|timed? ?out|host|refused|unreachable/i.test(e.message)?e.message:why(e));

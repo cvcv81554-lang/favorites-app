@@ -60,7 +60,7 @@ const ydOf=v=>{
   if(m){ const d=m[1]+'-'+m[2].padStart(2,'0')+'-01'; return {y:m[1],d}; }
   return {y:/^\d{4}$/.test(v.slice(0,4))?v.slice(0,4):''};
 };
-const WEX=['q','wd','n','a','p','du','ds','tg','u','upc','fav','ls'];
+const WEX=['q','wd','n','a','p','du','ds','tg','u','upc','fav','ls','ip','is','im','tm'];   // ip/is/im/tm: معرّفات العمل (ThePornDB/StashDB/IMDb/TMDB)
 const normW=w=>{
   if(Array.isArray(w)) return w.map(x=>{
     x=x||{};
@@ -173,7 +173,7 @@ function wApply(arr,mode){
 function wKeyOf(w){ return (wkey(w.t)||norm(w.t))+'|'+(wkey(w.s)||''); }
 function wRowItem(x,who){ const {it,w,k}=x; const up=isUpcoming(w); const key=wKeyOf(w);
   const meta=[who?it.name:'',w.s,w.d?fmtWd(w.d):w.y,w.du?w.du+' د':''].filter(Boolean).join(' · ');
-  const lead=who?`<span class="av" data-od="${it.id}">${pic(it)?`<img src="${pic(it)}" alt="">`:'♡'}</span>`:badge(w.s);
+  const lead=who?`<span class="av" data-od="${it.id}">${pic(it)?`<img src="${esc(pic(it))}" alt="">`:'♡'}</span>`:badge(w.s);
   return `<div class="wi wfi ${w.w?'seen':''}" data-ik="${it.id}|${k}" data-wkey="${esc(key)}">${lead}<div style="flex:1;min-width:0;cursor:pointer" data-wsheet="${esc(key)}"><div class="wt" dir="auto" style="text-align:start">${esc(w.t)}${up?'<span class="tag upc">قريبًا ⏳</span>':''}${w.q&&!w.w?'<span class="tag">🔖 للمشاهدة</span>':''}</div><div class="ws">${esc(meta)||'&nbsp;'}</div><div class="wrs">${[1,2,3,4,5].map(n=>`<button type="button" data-rs="${n}" class="${n<=(w.r||0)?'on':''}" aria-label="تقييم ${n}">★</button>`).join('')}</div></div><button class="ib sm wqt ${w.q?'on':''}" data-wq="1" title="قائمة المشاهدة" aria-label="قائمة المشاهدة">🔖</button><button class="ib sm wrc ${w.rec?'on':''}" data-rc="1" aria-label="أنصح به">${icon('like')}</button><button class="ib sm wtg ${w.w?'on':''}" data-wk="1" aria-label="تمت المشاهدة">${icon('eye')}</button></div>`; }
 function wAct(e){
   const sh=e.target.closest('[data-wsheet]');
@@ -186,7 +186,7 @@ function wAct(e){
   else if(q){ if(w.q) delete w.q; else w.q=1; }
   else if(g){ if(w.w){ delete w.w; } else { w.w=1; delete w.upc; if(!w.wd) w.wd=todayStr(); } }
   else return false;
-  save(it); updWorksDot(); return true;
+  it.updated=Date.now(); save(it); updWorksDot(); return true;
 }
 
 // ===== القوائم الذكية للممثلات =====

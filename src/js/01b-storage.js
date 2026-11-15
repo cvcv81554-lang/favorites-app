@@ -111,4 +111,4 @@ let _wCache=null;
 // نقطة الحفظ الوحيدة: تمرّ عليها بوابة +18 قبل الكتابة
 const save=(...a)=>{ _wCache=null; let arr=a.flat().filter(Boolean);
   const bad=arr.filter(minorRec); if(bad.length){ arr=arr.filter(x=>!bad.includes(x)); items=items.filter(x=>!bad.includes(x)); toast('رُفض حفظ سجل عمره أقل من 18 سنة'); }
-  return DB.put(arr).then(()=>{ HOOKS.saved.forEach(f=>{ try{ f(arr); }catch{} }); }).catch(e=>{ console.warn('save',e); toast('تعذّر الحفظ. ربما المساحة ممتلئة'); }); };
+  return DB.put(arr).then(()=>{ HOOKS.saved.forEach(f=>{ try{ f(arr); }catch{} }); return true; }).catch(e=>{ console.warn('save',e); toast('تعذّر الحفظ. ربما المساحة ممتلئة'); return false; }); };

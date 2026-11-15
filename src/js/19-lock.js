@@ -7,18 +7,21 @@ const Lock=(()=>{
   async function hashPin(pin,salt){ return hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(salt+'|'+pin))); }
   const cfg=()=>{ try{ const o=JSON.parse(LS.get(KEY,'null')); return o&&o.s&&o.h?o:null; }catch{ return null; } };
   const has=()=>!!cfg();
-  let buf='', fails=0, until=0, tick=0;
+  // عدد المحاولات ووقت الانتظار محفوظان: إغلاق التطبيق وفتحه لا يصفّرهما
+  const FK='vkte_lockf'; let buf='', fails=0, until=0, tick=0;
+  try{ const o=JSON.parse(LS.get(FK,'{}')); fails=+o.f||0; until=+o.u||0; if(Date.now()-Math.max(until,+o.t||0)>36e5){ fails=0; until=0; } }catch{}
+  const keepF=()=>{ try{ if(fails||until) LS.set(FK,JSON.stringify({f:fails,u:until,t:Date.now()})); else LS.del(FK); }catch{} };
   const el=$('lock'), dots=$('lockDots'), msg=$('lockMsg');
   const draw=()=>{ const n=(cfg()||{}).n||4; dots.innerHTML=Array.from({length:Math.max(n,buf.length)},(_,k)=>`<i class="${k<buf.length?'on':''}"></i>`).join(''); };
   function wait(){ clearInterval(tick); const f=()=>{ const s=Math.ceil((until-Date.now())/1000); if(s<=0){ clearInterval(tick); msg.textContent=''; return; } msg.textContent='محاولات كثيرة. انتظر '+s+' ثانية'; }; f(); tick=setInterval(f,500); }
   async function submit(){ const c=cfg(); if(!c||!buf) return; if(Date.now()<until) return;
-    if(await hashPin(buf,c.s)===c.h){ fails=0; buf=''; el.classList.remove('show'); msg.textContent=''; document.body.classList.remove('locked'); return; }
+    if(await hashPin(buf,c.s)===c.h){ fails=0; until=0; keepF(); buf=''; el.classList.remove('show'); msg.textContent=''; document.body.classList.remove('locked'); return; }
     fails++; buf=''; draw(); el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'),420); try{ navigator.vibrate&&navigator.vibrate(60); }catch{}
-    if(fails>=5){ until=Date.now()+Math.min(300,30*(fails-4))*1000; wait(); } else msg.textContent='الرمز غير صحيح'; }
+    if(fails>=5){ until=Date.now()+Math.min(300,30*(fails-4))*1000; wait(); } else msg.textContent='الرمز غير صحيح'; keepF(); }
   function press(k){ if(Date.now()<until) return; if(k==='del'){ buf=buf.slice(0,-1); } else if(k==='ok'){ submit(); return; } else if(buf.length<12){ buf+=k; if(fails<5) msg.textContent=''; }
     draw(); const c=cfg(); if(c&&c.n&&buf.length===c.n) submit(); }
   function lockNow(){ if(!has()) return false; if(ask.cancel) ask.cancel(); if(typeof Gallery!=='undefined') Gallery.close();
-    document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('show')); buf=''; draw(); if(Date.now()>=until) msg.textContent='';
+    document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('show')); buf=''; draw(); if(Date.now()>=until) msg.textContent=''; else wait();
     el.classList.add('show'); document.body.classList.add('locked'); setTimeout(()=>{ const b=el.querySelector('[data-k="5"]'); if(b&&document.documentElement.classList.contains('tv')) b.focus(); },80); return true; }
   $('lockPad').onclick=e=>{ const b=e.target.closest('[data-k]'); if(b) press(b.dataset.k); };
   document.addEventListener('keydown',e=>{ if(!el.classList.contains('show')) return;

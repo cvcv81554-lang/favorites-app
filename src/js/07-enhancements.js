@@ -37,7 +37,7 @@ function pickPerformers(o){ return new Promise(res=>{
     <div class="v17ppf"><span class="src" id="ppCnt"></span><button class="btn" data-x>إلغاء</button>${multi?`<button class="btn gold" id="ppOk">${esc(o.okText||'تم')}</button>`:''}</div>`;
   const vis=()=>{ const t=norm(q); let a=pool; if(only) a=a.filter(i=>sel.has(i.id)); if(t) a=a.filter(i=>norm(i.name+' '+(i.aliases||'')+' '+(i.country||'')).includes(t)); return a; };
   const draw=()=>{ const a=vis(), show=a.slice(0,lim);
-    $$('ppList').innerHTML=show.map(i=>`<button type="button" class="v17row ${sel.has(i.id)?'on':''}" data-id="${esc(i.id)}"><span class="av">${pic(i)?`<img src="${pic(i)}" loading="lazy" decoding="async" alt="">`:'♡'}</span><span class="t"><b>${esc(i.name)}</b><small>${esc([i.country,(i.works||[]).length?(i.works||[]).length+' عمل':''].filter(Boolean).join(' · '))||'&nbsp;'}</small></span>${multi?`<i class="ck">${sel.has(i.id)?'✓':''}</i>`:''}</button>`).join('')
+    $$('ppList').innerHTML=show.map(i=>`<button type="button" class="v17row ${sel.has(i.id)?'on':''}" data-id="${esc(i.id)}"><span class="av">${pic(i)?`<img src="${esc(pic(i))}" loading="lazy" decoding="async" alt="">`:'♡'}</span><span class="t"><b>${esc(i.name)}</b><small>${esc([i.country,(i.works||[]).length?(i.works||[]).length+' عمل':''].filter(Boolean).join(' · '))||'&nbsp;'}</small></span>${multi?`<i class="ck">${sel.has(i.id)?'✓':''}</i>`:''}</button>`).join('')
       +(a.length>lim?`<button type="button" class="btn v17more" data-more>عرض المزيد (${a.length-lim})</button>`:'')
       +(a.length?'':'<p class="src" style="padding:18px;text-align:center">لا نتائج</p>');
     if(multi){ $$('ppCnt').textContent=sel.size+' محدّدة'; $$('ppOnly').classList.toggle('on',only); } else $$('ppCnt').textContent=a.length+' ممثلة'; };
@@ -80,6 +80,7 @@ function doMerge(pid,oids){
   const snapP=clone(P), snapO=others.map(clone);
   others.forEach(O=>mergeOne(P,O)); P.updated=Date.now();
   const gone=new Set(others.map(o=>o.id)); items=items.filter(i=>!gone.has(i.id));
+  if(typeof Studio!=='undefined') Studio.retarget([...gone],P.id);
   gone.forEach(id=>DB.del(id).catch(()=>{})); save(P); render();
   undoToast('تم دمج '+others.length+' في «'+P.name+'»',async()=>{
     Object.keys(P).forEach(k=>delete P[k]); Object.assign(P,snapP);
@@ -90,7 +91,7 @@ function doMerge(pid,oids){
 async function mergeDialog(group,preId){
   const first=preId||group[0].id;
   const pid=await askShow(`<h2>دمج ممثلات مكررة</h2><p class="src" style="margin-bottom:10px;font-size:.88rem">اختر السجل الذي يبقى. يُنقل إليه من الباقي: الصور والأعمال (مع المشاهدة والتقييم) والوسوم والقوائم والحسابات والأسماء، ثم يُحذف السجل المدموج.</p>
-    <div class="v17opts">${group.map(i=>`<button type="button" class="v17row ${i.id===first?'on':''}" data-id="${esc(i.id)}"><span class="av">${pic(i)?`<img src="${pic(i)}" alt="">`:'♡'}</span><span class="t"><b>${esc(i.name)}</b><small>${(i.photos||[]).length} صور · ${(i.works||[]).length} عمل${i.rating?' · ★ '+(+i.rating).toFixed(1):''}</small></span><i class="ck">${i.id===first?'✓':''}</i></button>`).join('')}</div>
+    <div class="v17opts">${group.map(i=>`<button type="button" class="v17row ${i.id===first?'on':''}" data-id="${esc(i.id)}"><span class="av">${pic(i)?`<img src="${esc(pic(i))}" alt="">`:'♡'}</span><span class="t"><b>${esc(i.name)}</b><small>${(i.photos||[]).length} صور · ${(i.works||[]).length} عمل${i.rating?' · ★ '+(+i.rating).toFixed(1):''}</small></span><i class="ck">${i.id===first?'✓':''}</i></button>`).join('')}</div>
     <div class="actions"><button class="btn" id="aNo">إلغاء</button><button class="btn gold" id="aOk">دمج</button></div>`,(m,done)=>{
       let cur=first; m.querySelectorAll('.v17row').forEach(r=>r.onclick=()=>{ cur=r.dataset.id; m.querySelectorAll('.v17row').forEach(x=>{ x.classList.toggle('on',x===r); x.querySelector('.ck').textContent=x===r?'✓':''; }); });
       $$('aOk').onclick=()=>done(cur); $$('aNo').onclick=()=>done(null); });
@@ -135,7 +136,7 @@ mod('home',()=>{
     const arr=ids.map(id=>map.get(id)).filter(Boolean).slice(0,12);
     const show=!filtActive()&&!SEL.on&&items.length>=8&&arr.length>=2;
     strip.hidden=!show; if(!show){ strip.innerHTML=''; return; }
-    strip.innerHTML=`<h4>شاهدتها مؤخرًا</h4><div class="strip">${arr.map(i=>`<button type="button" data-id="${esc(i.id)}"><span class="av">${pic(i)?`<img src="${pic(i)}" loading="lazy" decoding="async" alt="">`:'♡'}</span><b>${esc(i.name.split(' ')[0])}</b></button>`).join('')}</div>`; }
+    strip.innerHTML=`<h4>شاهدتها مؤخرًا</h4><div class="strip">${arr.map(i=>`<button type="button" data-id="${esc(i.id)}"><span class="av">${pic(i)?`<img src="${esc(pic(i))}" loading="lazy" decoding="async" alt="">`:'♡'}</span><b>${esc(i.name.split(' ')[0])}</b></button>`).join('')}</div>`; }
   strip.onclick=e=>{ const b=e.target.closest('[data-id]'); if(b) openDetail(b.dataset.id); };
 
   function updBar(){

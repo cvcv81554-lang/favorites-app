@@ -23,7 +23,7 @@ function list(){
 // ===== عرض تدريجي للبطاقات: دفعة أولى سريعة ثم البقية عند الاقتراب من نهاية الشاشة =====
 const cardHtml=(i,n)=>{
   const ps=i.photos||[], p=pic(i);
-  const imgs=p?`<img class="on" src="${p}" decoding="async" ${n<6?'fetchpriority="high"':'loading="lazy"'} alt="">`+(ps.length>1?`<img decoding="async" alt="">`:''):'♡';
+  const imgs=p?`<img class="on" src="${esc(p)}" decoding="async" ${n<6?'fetchpriority="high"':'loading="lazy"'} alt="">`+(ps.length>1?`<img decoding="async" alt="">`:''):'♡';
   const dots=ps.length>1?`<div class="np">${ps.slice(0,6).map((_,k)=>`<i class="${k===0?'on':''}"></i>`).join('')}</div>`:'';
   return `<div class="card" data-id="${i.id}" style="--i:${Math.min(n,14)}">
   <div class="ph">${imgs}${i.rating?`<span class="rt">★ ${i.rating.toFixed(1)}</span>`:''}${dots}</div>
@@ -68,7 +68,7 @@ $('chips').onclick=e=>{ const c=e.target.closest('.chip'); if(!c) return;
   render(true); };
 $('grid').onclick=e=>{
   const f=e.target.closest('[data-fav]');
-  if(f){ const it=items.find(i=>i.id===f.dataset.fav); if(!it) return; it.fav=!it.fav; save(it); f.classList.toggle('on',it.fav); if(state.fav) render(); return; }
+  if(f){ const it=items.find(i=>i.id===f.dataset.fav); if(!it) return; it.fav=!it.fav; it.updated=Date.now(); save(it); f.classList.toggle('on',it.fav); if(state.fav) render(); return; }
   const c=e.target.closest('.card'); if(c) openDetail(c.dataset.id);
 };
 let qT; $('q').oninput=()=>{ clearTimeout(qT); qT=setTimeout(()=>render(),120); }; $('sort').onchange=()=>render(true);
@@ -106,7 +106,7 @@ setInterval(()=>{
 function openLists(){
   const cards=lists.map(L=>{ const ms=items.filter(i=>(i.lists||[]).includes(L.id)); const imgs=ms.map(pic).filter(Boolean).slice(0,4);
     const rated=ms.filter(i=>i.rating>0), avg=rated.length?rated.reduce((a,i)=>a+i.rating,0)/rated.length:0;
-    return `<div class="lc ${state.list===L.id?'on':''}" data-l="${L.id}" role="button" tabindex="0"><div class="lcv n${imgs.length}">${imgs.length?imgs.map(s=>`<img src="${s}" loading="lazy" decoding="async" alt="">`).join(''):icon('folder')}</div>
+    return `<div class="lc ${state.list===L.id?'on':''}" data-l="${L.id}" role="button" tabindex="0"><div class="lcv n${imgs.length}">${imgs.length?imgs.map(s=>`<img src="${esc(s)}" loading="lazy" decoding="async" alt="">`).join(''):icon('folder')}</div>
       <div class="lca"><button class="ib sm glass" data-lr="${L.id}" aria-label="إعادة تسمية">${icon('edit')}</button><button class="ib sm glass" data-ld="${L.id}" aria-label="حذف">${icon('trash')}</button></div>
       <div class="lcb"><div class="lcn">${esc(L.name)}</div><div class="lcm">${ms.length} ممثلة${avg?` · ★ ${avg.toFixed(1)}`:''}</div></div></div>`; }).join('');
   const smartHtml=SMART.map(([k,n,fn])=>{ const c=items.filter(fn).length; return `<span class="chip ${state.smart===k?'on':''}" data-sm="${k}">${esc(n)} (${c})</span>`; }).join('');
@@ -288,11 +288,13 @@ async function refreshWorksStash(it,silent){
   }catch(e){ if(!silent) toast(e&&(e.status===401||e.status===403)?'مفتاح StashDB غير صالح':'تعذّر التحديث من StashDB'+(e&&e.gql?': '+String(e.message).slice(0,50):'')); return null; }
 }
 // تحديث الأعمال من كل المصادر المتاحة (يدمج بلا تكرار)
-async function refreshAll(it,silent){ let n=0,ran=false;
-  if(LS.get('vkte_key')){ const r=await refreshWorks(it,silent); if(r){ n+=r.n; ran=true; } }
-  if(LS.get('vkte_stash')){ const r=await refreshWorksStash(it,silent); if(r){ n+=r.n; ran=true; } }
-  if(ran&&!silent) toast(n?'أُضيف '+n+' عمل جديد':'الأعمال محدّثة، لا جديد');
-  return ran?{n}:null; }
+// يرجع {n, fail:[المصادر التي فشلت]} — فشل مصدر لا يُخفى خلف رسالة «لا جديد»
+async function refreshAll(it,silent){ let n=0,ran=false; const fail=[];
+  // السلوك كما كان (بحث بالاسم إن لم تكن مربوطة)، ويُعدّ فشلًا فقط إن كانت مربوطة بالمصدر فعلًا
+  if(LS.get('vkte_key')){ const had=!!it.pdbId; const r=await refreshWorks(it,silent); if(r){ n+=r.n; ran=true; } else if(had) fail.push('ThePornDB'); }
+  if(LS.get('vkte_stash')){ const had=!!it.stashId; const r=await refreshWorksStash(it,silent); if(r){ n+=r.n; ran=true; } else if(had) fail.push('StashDB'); }
+  if(!silent&&(ran||fail.length)) toast((n?'أُضيف '+n+' عمل جديد':ran?'الأعمال محدّثة، لا جديد':'')+(fail.length?(ran?' · ':'')+'تعذّر التحديث من '+fail.join(' و'):''));
+  return ran||fail.length?{n,fail}:null; }
 
 // ===== التفاصيل =====
 let carT=null;
@@ -317,9 +319,9 @@ function openDetail(id){
       <input class="in wq" id="wQ" placeholder="ابحث في الأعمال" style="display:none"><div id="wl"></div><button class="btn wmore" id="wMore" style="display:none"></button>
       ${i.worksAt?`<div class="src" style="margin-top:8px" id="wAt">آخر تحديث للأعمال: ${fmtDate(i.worksAt)}</div>`:'<div id="wAt"></div>'}</details>`:'';
   $('mDetail').innerHTML=`<div class="hero">
-    ${pic(i)?`<img class="hbg" id="hbg" src="${pic(i)}" alt="">`:''}
+    ${pic(i)?`<img class="hbg" id="hbg" src="${esc(pic(i))}" alt="">`:''}
     <div class="htop"><button class="ib glass" id="dClose" aria-label="إغلاق">${icon('x')}</button><div>${photos.length>1?`<button class="ib glass" id="dPlay" aria-label="إيقاف التبديل التلقائي">${icon('pause')}</button>`:''}<button class="ib glass ${i.fav?'on':''}" id="dFav" aria-label="مفضّلة">${icon('star')}</button></div></div>
-    <div class="car" id="car">${photos.length?photos.map((p,n)=>`<img class="${n===0?'cur':''}" src="${p}" decoding="async" loading="lazy" alt="">`).join(''):'<div class="ph0">♡</div>'}</div>
+    <div class="car" id="car">${photos.length?photos.map((p,n)=>`<img class="${n===0?'cur':''}" src="${esc(p)}" decoding="async" loading="lazy" alt="">`).join(''):'<div class="ph0">♡</div>'}</div>
     ${photos.length>1?`<div class="cnt" id="cnt">${photos.map((_,n)=>`<i class="${n===0?'on':''}"></i>`).join('')}</div>`:''}
     <div class="hid"><h2 class="dname">${esc(i.name)}</h2>
       <div class="hr">${i.rating?stars(i.rating)+`<b>${i.rating.toFixed(1)}</b><span>من 5</span>`:'<span class="src">لم تقيّمها بعد</span>'}</div></div>
@@ -377,7 +379,7 @@ function openDetail(id){
       refreshAll(i,true).then(r=>{ if(r&&curDetail===id&&$('ovDetail').classList.contains('show')) drawWorks(); }); }
   }
   $('dClose').onclick=()=>closeOv('ovDetail');
-  $('dFav').onclick=()=>{ i.fav=!i.fav; save(i); render(); $('dFav').classList.toggle('on',i.fav); };
+  $('dFav').onclick=()=>{ i.fav=!i.fav; i.updated=Date.now(); save(i); render(); $('dFav').classList.toggle('on',i.fav); };
   $('dEdit').onclick=()=>{ closeOv('ovDetail'); openForm(i); };
   $('dDel').onclick=async()=>{ if(await askConfirm('حذف «'+i.name+'» ؟','حذف',true)){ const gone=i; items=items.filter(x=>x.id!==id); DB.del(id).catch(()=>toast('تعذّر الحذف')); render(); closeOv('ovDetail'); undoToast('تم حذف «'+gone.name+'»',async()=>{ if(items.some(x=>x.id===gone.id)) return; items.push(gone); await save(gone); render(); toast('تم الاسترجاع'); }); } };
 }

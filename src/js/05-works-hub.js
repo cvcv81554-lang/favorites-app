@@ -626,7 +626,7 @@ function wSheet(key){
     <h2 style="margin-bottom:4px;font-size:1.25rem;text-align:start" dir="auto">${esc(g.t)}</h2>
     <div class="src" style="margin-bottom:10px">${esc([g.s,g.d?fmtWd(g.d):g.y,g.du?fmtDur(g.du):''].filter(Boolean).join(' · ')||'بدون موقع أو تاريخ')}${upTxt?` · <b style="color:var(--gold2)">${esc(upTxt)}</b>`:''}</div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-      ${g.who.map(it=>`<span class="chip on" style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px" data-shod="${it.id}"><span class="av" style="width:22px;height:22px;border-radius:50%">${pic(it)?`<img src="${pic(it)}" alt="">`:'♡'}</span>${esc(it.name)}</span>`).join('')}
+      ${g.who.map(it=>`<span class="chip on" style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px" data-shod="${it.id}"><span class="av" style="width:22px;height:22px;border-radius:50%">${pic(it)?`<img src="${esc(pic(it))}" alt="">`:'♡'}</span>${esc(it.name)}</span>`).join('')}
       ${otherActs.length?`<button type="button" class="chip" id="shAddCo">＋ ممثلة مشاركة</button>`:''}
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--glass);padding:8px 12px;border-radius:16px;margin-bottom:10px">
@@ -803,11 +803,11 @@ async function wRadar(){
   const linked=items.filter(i=>(i.pdbId&&LS.get('vkte_key'))||(i.stashId&&LS.get('vkte_stash')));
   if(!linked.length){ toast('اربط ممثلة واحدة على الأقل بـ ThePornDB أو StashDB أولًا'); return; }
   wRadarBusy=true;
-  let added=0, c=0;
+  let added=0, c=0, failed=0; const failSrc=new Set();
   for(const it of linked){
     c++; toast(`رادار الأعمال: تحديث ${c} من ${linked.length} (${it.name})…`);
     const r=await refreshAll(it,true);
-    if(r) added+=r.n;
+    if(r) added+=r.n; if(r&&r.fail&&r.fail.length){ failed++; r.fail.forEach(x=>failSrc.add(x)); }
     await new Promise(z=>setTimeout(z,320));
   }
   if(LS.get('vkte_stash')){
@@ -816,7 +816,8 @@ async function wRadar(){
   }
   wRadarBusy=false;
   updWorksDot();
-  toast(added?`اكتمل الرادار: أُضيف ${added} عمل جديد ✨`:'اكتمل الرادار: كل الأعمال محدّثة، لا جديد');
+  const fm=failed?` · تعذّر تحديث ${failed} من ${linked.length} (${[...failSrc].join(' و')}): تحقق من المفتاح والاتصال`:'';
+  toast(added?`اكتمل الرادار: أُضيف ${added} عمل جديد ✨${fm}`:failed===linked.length?`تعذّر الرادار${fm}`:'اكتمل الرادار: كل الأعمال محدّثة، لا جديد'+fm);
   if($('ovWorks').classList.contains('show')) drawWorksHub();
 }
 
@@ -835,8 +836,8 @@ function toolCompare(){
         <select class="in" id="cmp2">${sorted.map(i=>`<option value="${i.id}" ${i.id===b.id?'selected':''}>${esc(i.name)}</option>`).join('')}</select>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:center;margin-bottom:10px">
-        <div class="sec" style="margin:0"><div class="av" style="width:64px;height:64px;margin:0 auto 6px;border-radius:16px">${pic(a)?`<img src="${pic(a)}" alt="">`:'♡'}</div><b>${esc(a.name)}</b><div class="src">${esc(a.country||'')}</div></div>
-        <div class="sec" style="margin:0"><div class="av" style="width:64px;height:64px;margin:0 auto 6px;border-radius:16px">${pic(b)?`<img src="${pic(b)}" alt="">`:'♡'}</div><b>${esc(b.name)}</b><div class="src">${esc(b.country||'')}</div></div>
+        <div class="sec" style="margin:0"><div class="av" style="width:64px;height:64px;margin:0 auto 6px;border-radius:16px">${pic(a)?`<img src="${esc(pic(a))}" alt="">`:'♡'}</div><b>${esc(a.name)}</b><div class="src">${esc(a.country||'')}</div></div>
+        <div class="sec" style="margin:0"><div class="av" style="width:64px;height:64px;margin:0 auto 6px;border-radius:16px">${pic(b)?`<img src="${esc(pic(b))}" alt="">`:'♡'}</div><b>${esc(b.name)}</b><div class="src">${esc(b.country||'')}</div></div>
       </div>
       ${row('التقييم العام',a.rating?a.rating.toFixed(1):0,b.rating?b.rating.toFixed(1):0)}
       ${row('عدد الأعمال',(a.works||[]).length,(b.works||[]).length)}

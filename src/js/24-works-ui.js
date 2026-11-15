@@ -52,7 +52,7 @@ wRowGroup=function(g){ const up=wUpTxt(g);
 
 // صف العمل داخل ملف الممثلة: الضغط يفتح نافذة العمل، وزر واحد للمشاهدة
 wRowItem=function(x,who){ const {it,w,k}=x, key=wKeyOf(w), up=wUpTxt(w);
-  const lead=who?`<span class="av" data-od="${it.id}">${pic(it)?`<img src="${pic(it)}" alt="">`:'♡'}</span>`:badge(w.s);
+  const lead=who?`<span class="av" data-od="${it.id}">${pic(it)?`<img src="${esc(pic(it))}" alt="">`:'♡'}</span>`:badge(w.s);
   return `<div class="wi wfi ${w.w?'seen':''}" data-ik="${it.id}|${k}" data-wkey="${esc(key)}">${lead}
     <div class="wr-b" data-wsheet="${esc(key)}" tabindex="0" role="button"><div class="wt" dir="auto">${esc(w.t)}</div><div class="ws">${esc([who?it.name:'',w.s].filter(Boolean).join(' · '))||'&nbsp;'}</div>
       <div class="wr-i">${up?`<i class="wk-b upc">${esc(up)}</i>`:''}<span>${esc([w.d?fmtWd(w.d):w.y,w.du?w.du+' د':''].filter(Boolean).join(' · '))}</span>${w.r?`<b>★ ${w.r}</b>`:''}${w.q&&!w.w?'<i>🔖</i>':''}${w.rec?'<i>👍</i>':''}${w.n?'<i>📝</i>':''}</div></div>

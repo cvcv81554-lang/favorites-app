@@ -22,7 +22,8 @@ const Studio=(()=>{
   const IMG=new Map();               // id → سجل
   let loaded=false, S=null, KV={};    // الإعدادات + مفاتيح صغيرة (ألبومات، سجل العرض…)
   const DEF={freq:'day', src:{tpdb:1,tpdbs:1,stash:1,stashs:1,wiki:1}, minPx:0, perMax:600, probe:24, keepOnRemove:0, pages:4};
-  async function load(){ if(loaded) return; const all=await run('img','readonly',s=>s.getAll()); (all||[]).forEach(x=>IMG.set(x.id,x));
+  let loadP=null; const load=()=>loadP||(loadP=load0().catch(e=>{ loadP=null; throw e; }));   // تحميل واحد مشترك (لا سباق بين طلبين)
+  async function load0(){ if(loaded) return; const all=await run('img','readonly',s=>s.getAll()); (all||[]).forEach(x=>IMG.set(x.id,x));
     S=Object.assign({},DEF,(await kvGet('settings'))||{}); S.src=Object.assign({},DEF.src,S.src||{});
     for(const k of ['albums','shown','perfAt','status','wrong','hiddenSrc','picks']) KV[k]=(await kvGet(k))||(k==='albums'?[]:{});
     loaded=true; }
@@ -289,7 +290,7 @@ const Studio=(()=>{
     const f=view.src?(x=>x.src===view.src):()=>true, l=(by[sub]||by.latest)().filter(f);
     const ss=sessions().filter(s=>s.pid===pid).slice(0,12);
     const chips=[['latest','الأحدث'],['best','الأفضل'],['rare','الأندر'],['portrait','بورتريه'],['promo','ترويجية'],['still','لقطات'],['archive','أرشيف']].filter(([k])=>by[k]().length).map(([k,t])=>`<button type="button" class="chip ${sub===k?'on':''}" data-psub="${k}">${t}</button>`).join('');
-    const srcs=[...new Set(all.map(x=>x.src))].map(s=>`<button type="button" class="chip ${view.src===s?'on':''}" data-psrc="${s}">${SRC[s]}</button>`).join('');
+    const srcs=[...new Set(all.map(x=>x.src))].map(s=>`<button type="button" class="chip ${view.src===s?'on':''}" data-psrc="${esc(s)}">${SRC[s]}</button>`).join('');
     return `<div class="spfhead"><img src="${esc(pic(p))}" alt=""><div><b>${esc(p.name)}</b><small>${all.length} صورة · ${ss.length} جلسة · آخر بحث ${KV.perfAt[pid]?ago(KV.perfAt[pid]):'—'}</small>
       <div class="sbtns"><button type="button" class="btn" data-od="${esc(pid)}">صفحة الممثلة</button><button type="button" class="btn" data-act="perfscan" data-pid="${esc(pid)}">ابحث الآن</button></div></div></div>
       <div class="schips">${chips}</div>${srcs?`<div class="schips">${srcs}</div>`:''}${grid(l,'perf:'+pid)}
@@ -407,7 +408,7 @@ const Studio=(()=>{
     else if(k==='unhidesrc'){ KV.hiddenSrc={}; saveKV('hiddenSrc').then(draw); }
     else if(k==='clear') askConfirm('مسح فهرس الصور؟ سيُعاد البحث لاحقًا. المعجَبات وصور الألبومات تبقى.','مسح',true).then(async y=>{ if(!y) return; const drop=[...IMG.values()].filter(x=>!x.like&&!(x.albums||[]).length).map(x=>x.id); drop.forEach(id=>IMG.delete(id)); await delImgs(drop); KV.perfAt={}; await saveKV('perfAt'); draw(); }); }
   function onChange(e){ const t=e.target;
-    if(t.dataset.set){ const k=t.dataset.set, v=t.value; S[k]=/^\d+$/.test(v)?+v:v; kvSet('settings',S); toast('حُفظ'); }
+    if(t.dataset.set){ const k=t.dataset.set, v=t.value; S[k]=/^\d+$/.test(v)?+v:v; kvSet('settings',S).then(()=>toast('حُفظ'),()=>toast('تعذّر حفظ الإعداد')); }
     if(t.dataset.src){ S.src[t.dataset.src]=t.checked?1:0; kvSet('settings',S); } }
 
   // ---------- الربط مع التطبيق ----------
@@ -434,6 +435,9 @@ const Studio=(()=>{
       const sc=main+side*2.2; if(sc<bs){ bs=sc; best=el; } }
     if(best){ best.focus({preventScroll:true}); best.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'}); } }
   function tvBack(){ if(stack.length||view.v!=='home'||tab!=='home'){ if(!stack.length&&view.v==='home'){ tab='home'; draw(); } else back(); focusFirst(); return true; } closeOv('ovStudio'); return false; }
-  return {open:v=>open(v).then(()=>{ if(document.documentElement.classList.contains('tvapp')) focusFirst(); }),tvBack,move,discover,isOpen,_err:(img,id)=>{ const x=IMG.get(id); if(x&&img.src!==x.url&&x.prev){ img.src=x.url; return; } img.closest('button')&&img.closest('button').classList.add('bad'); },
+  // دمج ممثلات مكررة: تنتقل صور المدموجة للممثلة الباقية (لا تُحذف مع حذف السجل المدموج)
+  function retarget(from,to){ const go=()=>{ const ch=[]; IMG.forEach(x=>{ if(from.includes(x.pid)){ x.pid=to; ch.push(x); } }); from.forEach(id=>{ delete KV.perfAt[id]; }); return putImgs(ch).then(()=>saveKV('perfAt')); };
+    return loaded?go():load().then(go); }
+  return {retarget,open:v=>open(v).then(()=>{ if(document.documentElement.classList.contains('tvapp')) focusFirst(); }),tvBack,move,discover,isOpen,_err:(img,id)=>{ const x=IMG.get(id); if(x&&img.src!==x.url&&x.prev){ img.src=x.url; return; } img.closest('button')&&img.closest('button').classList.add('bad'); },
     _test:{IMG,load,SEL,sessions,dedupe,ham,justify,quality,rarity,versions,similar,get S(){ return S; },get KV(){ return KV; }}};
 })();

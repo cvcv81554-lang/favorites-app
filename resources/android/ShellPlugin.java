@@ -47,6 +47,10 @@ public class ShellPlugin extends Plugin {
     private int port = 0;
     private final Map<String, Pending> pending = new ConcurrentHashMap<>();
     private final Map<String, Integer> fails = new ConcurrentHashMap<>();
+    // حماية الاستقبال: حد للاتصالات المتزامنة، وحد عام للمحاولات الخاطئة (30 خلال 10 دقائق → قفل 10 دقائق)
+    private final java.util.concurrent.Semaphore slots = new java.util.concurrent.Semaphore(8);
+    private final java.util.concurrent.atomic.AtomicInteger gFails = new java.util.concurrent.atomic.AtomicInteger();
+    private volatile long gStart = 0, lockUntil = 0;
 
     private static class Pending {
         final CountDownLatch latch = new CountDownLatch(1);
@@ -171,7 +175,8 @@ public class ShellPlugin extends Plugin {
         while (!srv.isClosed()) {
             try {
                 final Socket s = srv.accept();
-                Thread t = new Thread(() -> handle(s), "fav-sync-req");
+                if (!slots.tryAcquire()) { try { s.close(); } catch (Exception ignored) {} continue; }
+                Thread t = new Thread(() -> { try { handle(s); } finally { slots.release(); } }, "fav-sync-req");
                 t.setDaemon(true);
                 t.start();
             } catch (Exception e) {
@@ -222,23 +227,28 @@ public class ShellPlugin extends Plugin {
                 if (i > 0 && h.substring(0, i).trim().equalsIgnoreCase("content-length")) len = Integer.parseInt(h.substring(i + 1).trim());
             }
             if (method.equals("OPTIONS")) { reply(out, 204, ""); s.close(); return; }
-            if (len < 0 || len > MAX_BODY) { reply(out, 413, "{\"error\":\"too large\"}"); s.close(); return; }
-            byte[] body = new byte[len];
-            int off = 0;
-            while (off < len) { int r = in.read(body, off, len - off); if (r < 0) break; off += r; }
             int q = target.indexOf('?');
             String path = q < 0 ? target : target.substring(0, q);
             String query = q < 0 ? "" : target.substring(q + 1);
             String peer = s.getInetAddress().getHostAddress();
+            // التحقق من الرمز قبل قراءة أي جسم (لا ذاكرة تُحجز لطلب غير مصرّح)
+            long now = System.currentTimeMillis();
+            if (now - gStart > 600000) { gStart = now; gFails.set(0); fails.clear(); }
             Integer f = fails.get(peer);
-            if (f != null && f >= 12) { reply(out, 429, "{\"error\":\"locked\"}"); s.close(); return; }
-            if (token.length() == 0 || !token.equals(param(query, "k"))) {
+            if (now < lockUntil || (f != null && f >= 12)) { reply(out, 429, "{\"error\":\"locked\"}"); s.close(); return; }
+            byte[] want = token.getBytes(StandardCharsets.UTF_8), got = param(query, "k").getBytes(StandardCharsets.UTF_8);
+            if (want.length == 0 || !java.security.MessageDigest.isEqual(want, got)) {
                 fails.put(peer, (f == null ? 0 : f) + 1);
+                if (gFails.incrementAndGet() >= 30) { lockUntil = now + 600000; gFails.set(0); }
                 reply(out, 401, "{\"error\":\"code\"}");
                 s.close();
                 return;
             }
             fails.remove(peer);
+            if (len < 0 || len > MAX_BODY) { reply(out, 413, "{\"error\":\"too large\"}"); s.close(); return; }
+            byte[] body = new byte[len];
+            int off = 0;
+            while (off < len) { int r = in.read(body, off, len - off); if (r < 0) break; off += r; }
             if (path.startsWith("/photo/") && (method.equals("PUT") || method.equals("POST"))) {
                 String name = path.substring(7);
                 if (!name.matches("[A-Za-z0-9_-]{1,80}\\.(jpg|jpeg|png|webp|gif|avif)")) { reply(out, 400, "{\"error\":\"name\"}"); s.close(); return; }

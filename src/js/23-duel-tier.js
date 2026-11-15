@@ -14,7 +14,7 @@ const Duel=(()=>{
   function vote(w){ if(!A||!B) return; const ea=1/(1+Math.pow(10,(eloOf(B)-eloOf(A))/400)), ra=eloOf(A), rb=eloOf(B);
     A.elo=Math.round(ra+K*(w-ea)); B.elo=Math.round(rb+K*((1-w)-(1-ea))); A.duels=(A.duels||0)+1; B.duels=(B.duels||0)+1;
     if(w===1) A.dw=(A.dw||0)+1; else if(w===0) B.dw=(B.dw||0)+1;
-    save([A,B]); done++; last=[A,B]; try{ navigator.vibrate&&navigator.vibrate(8); }catch{} pair(); draw(); }
+    A.updated=B.updated=Date.now(); save([A,B]); done++; last=[A,B]; try{ navigator.vibrate&&navigator.vibrate(8); }catch{} pair(); draw(); }
   const side=(i,k)=>`<button type="button" class="dc" data-v="${k}"><span class="dc-ph">${pic(i)?`<img src="${esc((i.photos&&i.photos[0])||pic(i))}" decoding="async" alt="">`:'♡'}</span><b>${esc(i.name)}</b><small>${i.rating?'★ '+(+i.rating).toFixed(1)+' · ':''}${eloOf(i)} نقطة</small></button>`;
   function draw(){ const l=members();
     const chips=`<div class="v17chips"><span class="chip ${pool==='all'?'on':''}" data-pool="all">الكل</span><span class="chip ${pool==='fav'?'on':''}" data-pool="fav">★ المفضلة</span>${lists.map(L=>`<span class="chip ${pool===L.id?'on':''}" data-pool="${L.id}">${esc(L.name)}</span>`).join('')}</div>`;
@@ -61,7 +61,7 @@ const Tier=(()=>{
     const v=await askShow(`<h2>${esc(it.name)}</h2><p class="src" style="margin-bottom:10px">اختر المستوى</p><div class="tpick">${T.map(([k,n])=>`<button type="button" class="tp t${k} ${it.tier===k?'on':''}" data-t="${k}"><b>${k}</b><small>${n}</small></button>`).join('')}</div>
       <div class="actions"><button class="btn" data-t="open">فتح الملف</button><button class="btn" data-t="">بلا مستوى</button><button class="btn" id="aNo">إلغاء</button></div>`,(mm,done)=>{ $('aNo').onclick=()=>done(null); mm.onclick=ev=>{ const b=ev.target.closest('[data-t]'); if(b) done({t:b.dataset.t}); }; });
     if(!v) return; if(v.t==='open'){ openDetail(it.id); return; }
-    if(v.t) it.tier=v.t; else delete it.tier; await save(it); draw(); m.scrollTop=top; });
+    if(v.t) it.tier=v.t; else delete it.tier; it.updated=Date.now(); await save(it); draw(); m.scrollTop=top; });
   const open=()=>{ if(!items.length){ toast('أضف ممثلات أولًا'); return; } draw(); $('ovTier').classList.add('show'); m.scrollTop=0; };
   return {open};
 })();

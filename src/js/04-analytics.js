@@ -3,7 +3,7 @@
 const avgOf=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
 const topN=(arr,n)=>{ const m={}; arr.forEach(x=>{ if(x) m[x]=(m[x]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,n); };
 const barRow=(label,val,max,txt)=>`<div class="brow"><span class="bl">${esc(label)}</span><div class="bt"><div class="bf" style="width:${max?Math.max(3,val/max*100):0}%"></div></div><span class="bv">${txt}</span></div>`;
-const avatar=i=>`<span class="av">${pic(i)?`<img src="${pic(i)}" alt="">`:'♡'}</span>`;
+const avatar=i=>`<span class="av">${pic(i)?`<img src="${esc(pic(i))}" alt="">`:'♡'}</span>`;
 function radar(vals){
   const n=vals.length, cx=140, cy=125, R=76; const pt=(k,r)=>{ const a=-Math.PI/2+k*2*Math.PI/n; return [cx+r*Math.cos(a),cy+r*Math.sin(a)]; };
   const poly=(r)=>vals.map((_,k)=>pt(k,r).map(v=>v.toFixed(1)).join(',')).join(' ');

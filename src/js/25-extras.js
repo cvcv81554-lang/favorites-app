@@ -52,7 +52,7 @@ const Extras=(()=>{
         <div class="starpick rses-s">${[1,2,3,4,5].map(s=>`<button type="button" data-s="${s}">★</button>`).join('')}</div></div>
         <div class="actions" style="justify-content:center"><button type="button" class="btn ${i.fav?'gold':''}" data-f>★ مفضلة</button><button type="button" class="btn" data-o>فتح الملف</button><button type="button" class="btn" data-n>تخطّي ←</button></div>`,(m,done)=>{
         m.onclick=async e=>{ const s=e.target.closest('[data-s]'); if(s){ i.rating=+s.dataset.s; i.updated=Date.now(); await save(i); n++; k++; done(null); render(); draw(); return; }
-          if(e.target.closest('[data-f]')){ i.fav=!i.fav; await save(i); e.target.closest('[data-f]').classList.toggle('gold',i.fav); return; }
+          if(e.target.closest('[data-f]')){ i.fav=!i.fav; i.updated=Date.now(); await save(i); e.target.closest('[data-f]').classList.toggle('gold',i.fav); return; }
           if(e.target.closest('[data-o]')){ done(null); openDetail(i.id); return; } if(e.target.closest('[data-n]')){ k++; done(null); draw(); } }; }); };
     draw(); }
 

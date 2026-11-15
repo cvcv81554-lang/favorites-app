@@ -95,25 +95,30 @@ const Backup=(()=>{
     return prefsChanged; }
 
   // ---------- الاستيراد (يقبل ملف التطبيق القديم v4/v5 كما هو، ولا يفقد أي حقل) ----------
-  const cleanImage=v=>typeof v==='string'&&(/^https?:\/\//i.test(v)||/^data:image\/(?:png|jpe?g|webp|gif|avif);base64,/i.test(v))&&v.length<40*1024*1024?v:'';
+  const cleanImage=v=>safeImg(v)&&v.length<40*1024*1024?v:'';
   async function importJson(j){
     if(!j||!Array.isArray(j.items)||j.items.length>50000){ toast('ملف غير صالح'); return false; }
-    const safeItems=j.items.filter(x=>x&&typeof x==='object'&&!Array.isArray(x)&&typeof x.id==='string'&&x.id.length<=128&&typeof x.name==='string'&&x.name.trim().length>0).map(x=>{
-      const y={...x,name:x.name.trim().slice(0,300),photos:Array.isArray(x.photos)?x.photos.slice(0,MAXPH).map(cleanImage).filter(Boolean):[],tags:Array.isArray(x.tags)?x.tags.filter(t=>typeof t==='string').slice(0,100):[],works:Array.isArray(x.works)?x.works.slice(0,5000):x.works};
+    const safeItems=j.items.filter(x=>x&&typeof x==='object'&&!Array.isArray(x)&&safeId(x.id)&&typeof x.name==='string'&&x.name.trim().length>0).map(x=>{
+      const y={...x,name:x.name.trim().slice(0,300),photos:Array.isArray(x.photos)?x.photos.slice(0,MAXPH).map(cleanImage).filter(Boolean):[],tags:Array.isArray(x.tags)?x.tags.filter(t=>typeof t==='string').slice(0,100):[],works:Array.isArray(x.works)?safeWorks(x.works.slice(0,5000)):x.works};
       y.thumb=cleanImage(x.thumb)||''; return y; });
     const minors=safeItems.filter(minorRec), ok=safeItems.filter(x=>!minorRec(x));   // بوابة +18 على المستورد أيضًا
     const byId=new Map(items.map(i=>[i.id,i])); const add=[],upd=[]; let same=0;
     const broken=c=>(c.photos||[]).length<(c._want||0)||(FST.on&&(c.photos||[]).some(p=>PB.map.has(p)))||DB.legacy.includes(c.id);
-    ok.forEach(x=>{ const cur=byId.get(x.id); if(!cur) add.push(x); else { cur._want=x.photos.length; const fix=broken(cur); delete cur._want; if((x.updated||0)>(cur.updated||0)||fix) upd.push(x); else same++; } });
+    const fixPh=[];
+    ok.forEach(x=>{ const cur=byId.get(x.id); if(!cur) add.push(x); else { cur._want=x.photos.length; const fix=broken(cur); delete cur._want; if((x.updated||0)>(cur.updated||0)) upd.push(x); else if(fix) fixPh.push([cur,x]); else same++; } });
+    // صور ناقصة عندك والملف ليس أحدث: نكمل الصور فقط ونُبقي باقي تعديلاتك
+    // صور الملف data: وصور الجهاز ملفات/blob فلا تُقارن مباشرة: نأخذ مجموعة صور الملف كاملة (بلا تكرار) ونُبقي باقي حقولك
+    fixPh.forEach(([cur,x])=>{ upd.push({...cur,photos:x.photos.slice(0,MAXPH),thumb:x.thumb||cur.thumb||''}); });
+    const skipped=j.items.length-safeItems.length;
     const hasMeta=(j.prefs&&typeof j.prefs==='object')||(j.lists||[]).length||(j.wlists||[]).length;
     if(!add.length&&!upd.length&&!hasMeta){ toast('لا جديد في هذا الملف'); return false; }
-    if(!(await askConfirm('في الملف '+j.items.length+' ممثلة: '+add.length+' جديدة، '+upd.length+' أحدث من نسختك أو صورها ناقصة عندك (ستُحدَّث)، '+same+' بلا تغيير.'+(minors.length?' سيُتجاوز '+minors.length+' سجل تاريخ ميلاده أقل من 18 سنة أو غير مفهوم ('+minors.slice(0,3).map(m=>m.name).join('، ')+').':'')+' لن يُحذف شيء عندك. متابعة؟','استيراد'))) return false;
+    if(!(await askConfirm('في الملف '+j.items.length+' ممثلة: '+add.length+' جديدة، '+upd.length+' أحدث من نسختك أو صورها ناقصة عندك (ستُحدَّث)، '+same+' بلا تغيير.'+(skipped?' سيُتجاوز '+skipped+' سجل تالف.':'')+(minors.length?' سيُتجاوز '+minors.length+' سجل تاريخ ميلاده أقل من 18 سنة أو غير مفهوم ('+minors.slice(0,3).map(m=>m.name).join('، ')+').':'')+' لن يُحذف شيء عندك. متابعة؟','استيراد'))) return false;
     busy.show('جارٍ الاستيراد…');
     try{ const all=[...add,...upd]; all.forEach(normItem); items.push(...add);
       upd.forEach(x=>{ const k=items.findIndex(i=>i.id===x.id); if(k>=0) items[k]=x; });
       for(let k=0;k<all.length;k+=15){ await DB.put(all.slice(k,k+15)); HOOKS.saved.forEach(f=>{ try{ f(all.slice(k,k+15)); }catch{} }); busy.show('جارٍ الاستيراد… '+Math.min(all.length,k+15)+' / '+all.length); await sleep(0); }
       _wCache=null; const prefsChanged=mergeMeta(j);
-      render(true); closeOv('ovSet'); toast('تم الاستيراد: '+add.length+' جديدة'+(upd.length?'، '+upd.length+' محدّثة':'')+(minors.length?'، تُجوِوز '+minors.length:'')); backfillThumbs();
+      render(true); closeOv('ovSet'); toast('تم الاستيراد: '+add.length+' جديدة'+(upd.length?'، '+upd.length+' محدّثة':'')+(minors.length?'، تُجوِوز '+minors.length:'')+(skipped?'، تُجوِز '+skipped+' تالف':'')); backfillThumbs();
       if(prefsChanged) setTimeout(()=>location.reload(),1500);
     }catch(e){ toast('تعذّر الاستيراد: '+String(e&&e.message||e).slice(0,80)); return false; }
     finally{ busy.hide(); }
@@ -155,7 +160,7 @@ const Backup=(()=>{
     const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},await keyFor(pass,salt),enc.encode(text)));
     return JSON.stringify({app:'vkte-enc',v:1,salt:b64(salt),iv:b64(iv),data:b64(ct)}); }
   async function decrypt(o,pass){ try{ return dec.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(o.iv)},await keyFor(pass,unb64(o.salt)),unb64(o.data))); }catch{ throw new Error('كلمة السر غير صحيحة'); } }
-  async function exportEnc(){ if(!items.length){ toast('لا بيانات للتصدير'); return; } const pass=await askText('كلمة سر لتشفير النسخة (4 أحرف فأكثر). لا تنسها','','كلمة السر'); if(!pass) return; if(pass.length<4){ toast('كلمة السر 4 أحرف على الأقل'); return; }
+  async function exportEnc(){ if(!items.length){ toast('لا بيانات للتصدير'); return; } const pass=await askText('كلمة سر لتشفير النسخة (8 أحرف فأكثر). لا تنسها','','كلمة السر'); if(!pass) return; if(pass.length<8){ toast('كلمة السر 8 أحرف على الأقل'); return; }
     busy.show('تشفير النسخة…'); try{ const out=await encrypt((await fullJson()).join(''),pass); await shareFile('favorites-backup-'+stamp()+'.vkte',(async function*(){ yield out; })(),'نسخة مشفّرة'); LS.set('vkte_last_export',String(Date.now())); toast('تم التصدير المشفّر'); }
     catch(e){ toast('تعذّر التصدير: '+String(e&&e.message||e).slice(0,80)); } finally{ busy.hide(); } }
 

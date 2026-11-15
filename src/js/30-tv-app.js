@@ -267,7 +267,7 @@ const TVApp=(()=>{
           <ol><li><b>امسح الرمز</b> بكاميرا الجوال ← يُفتح تطبيق المفضلة ويبدأ الإرسال.</li><li>أو في الجوال: المزيد ← <b>الشاشة</b> ← ربط بشاشة، واكتب:</li></ol>
           <div class="sy-kv"><span>العنوان</span><b dir="ltr">${esc(s.ip||'—')}${s.port&&s.port!==8765?':'+s.port:''}</b></div><div class="sy-kv"><span>الرمز</span><b dir="ltr" class="code">${esc(s.code)}</b></div>
           <p class="tv-note0">الجهازان على نفس شبكة Wi-Fi. بعد الربط يصل أي تعديل من الجوال خلال ثوانٍ، وأبقِ التطبيق مفتوحًا على الشاشة.</p>
-          <p class="tv-note0">${last?'آخر مزامنة: '+esc(fmtDate(last.at))+' '+new Date(last.at).toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'})+(last.sent!=null?' · '+last.sent+' ممثلة، '+(last.photos||0)+' صورة':''):'لم تصل أي مزامنة بعد.'} · في المكتبة الآن ${items.length} ممثلة.</p>
+          <p class="tv-note0">${last?'آخر مزامنة: '+esc(fmtDate(last.at))+' '+new Date(last.at).toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'})+(last.sent!=null?' · '+esc(last.sent)+' ممثلة، '+esc(last.photos||0)+' صورة':''):'لم تصل أي مزامنة بعد.'} · في المكتبة الآن ${items.length} ممثلة.</p>
           <div class="tv-acts" data-row="sya">${btn('newcode','رمز جديد','data-act="newcode"')}${btn('impurl','استيراد من رابط','data-act="impurl"')}${btn('impdir','استيراد من مجلد','data-act="impdir"')}</div></div></div></div>`; }
 
   function settings(){ const th=LS.get('vkte_theme','dark'), sc=LS.get('vkte_tvs','1'), an=LS.get('vkte_tv_anim','1');

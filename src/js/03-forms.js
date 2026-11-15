@@ -69,7 +69,7 @@ function openForm(it){
   <label style="display:flex;gap:8px;align-items:center;cursor:pointer;color:var(--text)"><input type="checkbox" id="fAdult" ${edit?'checked':''}> أؤكد أنها بالغة (18 سنة فأكثر)</label>
   <div class="actions"><button class="btn" id="fCancel">إلغاء</button><button class="btn gold" id="fSave">حفظ</button></div>`;
   $('ovForm').classList.add('show'); $('mForm').scrollTop=0;
-  const drawThumbs=()=>{ $('thumbs').innerHTML=photos.map((p,n)=>`<div class="th ${n===0?'main':''}" data-n="${n}" title="اضغط لجعلها الرئيسية"><img src="${p}" alt="" referrerpolicy="no-referrer"><i data-x="${n}" aria-label="حذف الصورة">✕</i></div>`).join(''); $('thumbs').querySelectorAll('img').forEach(im=>{ im.onerror=()=>im.closest('.th').classList.add('bad'); }); };
+  const drawThumbs=()=>{ $('thumbs').innerHTML=photos.map((p,n)=>`<div class="th ${n===0?'main':''}" data-n="${n}" title="اضغط لجعلها الرئيسية"><img src="${esc(p)}" alt="" referrerpolicy="no-referrer"><i data-x="${n}" aria-label="حذف الصورة">✕</i></div>`).join(''); $('thumbs').querySelectorAll('img').forEach(im=>{ im.onerror=()=>im.closest('.th').classList.add('bad'); }); };
   drawThumbs();
   $('thumbs').onclick=e=>{ const x=e.target.closest('[data-x]'); if(x){ photos.splice(+x.dataset.x,1); drawThumbs(); return; } const t=e.target.closest('.th'); if(t){ const n=+t.dataset.n; photos.unshift(photos.splice(n,1)[0]); drawThumbs(); } };
   $('fPh').onchange=async e=>{ for(const f of e.target.files){ if(photos.length>=MAXPH){ toast('الحد الأقصى '+MAXPH+' صورة'); break; } try{ photos.push(await resize(f)); }catch{ toast('تعذّرت قراءة صورة'); } } e.target.value=''; drawThumbs(); };
@@ -181,7 +181,8 @@ function openForm(it){
       accounts:accs.map(x=>({p:x.p,v:String(x.v||'').trim()})).filter(x=>x.v), pdbId:pdbId||undefined, worksAt:worksAt||undefined, updated:Date.now() };
     { const prev=(edit&&it.source)||''; const T=used||/ThePornDB/.test(prev), S=usedS||/StashDB/.test(prev); const X=['OnlyFans','Fansly'].filter(n=>usedX.includes(n)||new RegExp(n).test(prev)); rec.source=(T||S||X.length)?[T&&'ThePornDB',S&&'StashDB',...X].filter(Boolean).join(' + ')+' (راجعتُه يدويًا)':(rec.source||'إدخال يدوي'); }
     if(edit) items=items.map(x=>x.id===rec.id?rec:x); else items.push(rec);
-    await save(rec); render(); closeOv('ovForm'); toast('تم الحفظ'); btn.disabled=false;
+    if(!(await save(rec))){ if(edit) items=items.map(x=>x.id===rec.id?it:x); else items=items.filter(x=>x!==rec); render(); btn.disabled=false; return; }   // فشل الحفظ: النموذج يبقى ببياناته
+    render(); closeOv('ovForm'); toast('تم الحفظ'); btn.disabled=false;
   };
 }
 $('bAdd').onclick=()=>openForm(null);
@@ -201,7 +202,7 @@ function openPick(){
   $('mPick').innerHTML=`<div class="fh" style="padding:4px 0 8px"><h2 style="margin:0">سحب عشوائي</h2><button class="ib" id="pkClose" aria-label="إغلاق">${icon('x')}</button></div>
     <p class="src" style="font-size:.85rem;margin-bottom:8px">حدّد الممثلات اللي تبغى تسحب منهن، ثم اضغط «اسحب».</p>
     <div class="pkchips"><span class="chip" data-q="all">الكل</span><span class="chip" data-q="fav">المفضّلة</span><span class="chip" data-q="none">إلغاء الكل</span>${lists.map(L=>`<span class="chip" data-q="L:${L.id}">${esc(L.name)}</span>`).join('')}</div>
-    <div class="pklist" id="pkList">${sorted.map(i=>`<label class="pk"><input type="checkbox" data-p="${i.id}" ${pickSel.has(i.id)?'checked':''}><span class="av">${pic(i)?`<img src="${pic(i)}" alt="">`:'♡'}</span><span class="nm">${esc(i.name)}</span><small>${(i.works||[]).length?(i.works||[]).length+' عمل':'بلا أعمال'}</small></label>`).join('')}</div>
+    <div class="pklist" id="pkList">${sorted.map(i=>`<label class="pk"><input type="checkbox" data-p="${i.id}" ${pickSel.has(i.id)?'checked':''}><span class="av">${pic(i)?`<img src="${esc(pic(i))}" alt="">`:'♡'}</span><span class="nm">${esc(i.name)}</span><small>${(i.works||[]).length?(i.works||[]).length+' عمل':'بلا أعمال'}</small></label>`).join('')}</div>
     <label style="display:flex;gap:8px;align-items:center;margin:12px 0;cursor:pointer;color:var(--text)"><input type="checkbox" id="pkNew" ${pickNew?'checked':''}> الأعمال اللي ما شاهدتها فقط</label>
     <div class="actions" style="justify-content:space-between;margin-top:0"><span class="src" id="pkCnt"></span><button class="btn gold" id="pkGo">${icon('shuffle')} اسحب</button></div>
     <div id="pkRes"></div>`;
@@ -212,7 +213,7 @@ function openPick(){
   $('pkClose').onclick=()=>closeOv('ovPick');
   $('mPick').onchange=e=>{ const b=e.target.closest('[data-p]'); if(b){ b.checked?pickSel.add(b.dataset.p):pickSel.delete(b.dataset.p); cnt(); return; } if(e.target.id==='pkNew'){ pickNew=e.target.checked; LS.set('vkte_picknew',pickNew?'1':'0'); } };
   const showRes=()=>{ const r=$('pkRes'); if(!pickCur){ r.innerHTML=''; return; } const it=pickOf(pickCur.id); if(!it){ r.innerHTML=''; return; } const w=pickCur.k>=0?it.works[pickCur.k]:null;
-    r.innerHTML=`<div class="pkres"><div class="pkc">${pic(it)?`<img src="${pic(it)}" alt="">`:'♡'}</div><div class="pkr"><div class="big">${esc(it.name)}</div>
+    r.innerHTML=`<div class="pkres"><div class="pkc">${pic(it)?`<img src="${esc(pic(it))}" alt="">`:'♡'}</div><div class="pkr"><div class="big">${esc(it.name)}</div>
       ${w?`<div class="pkw"><b>${esc(w.t)}</b><span>${esc([w.s,w.y].filter(Boolean).join(' · '))||'&nbsp;'}</span></div>`:`<div class="pkw"><span>${(it.works||[]).length?'شاهدت كل أعمالها المسجّلة 🎉':'ما عندها أعمال مسجّلة'}</span></div>`}
       <div class="pkb">${w?`<button class="btn gold" data-a="search">ابحث عنه ↗</button><button class="btn" data-a="seen">شاهدته ✓</button><button class="btn" data-a="again">عمل ثاني</button>`:''}<button class="btn" data-a="open">ملفها</button></div></div></div>`; };
   const draw=(sameAct)=>{ let it=sameAct&&pickCur?pickOf(pickCur.id):null;

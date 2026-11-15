@@ -22,7 +22,7 @@ const TVApp=(()=>{
   const jg=(k,d)=>{ try{ const v=JSON.parse(LS.get(k,'')); return v==null?d:v; }catch{ return d; } };
 
   // ---------------- البناء ----------------
-  const NAV=[['search','i-search','بحث'],['home','i-home','الرئيسية'],['lib','i-grid','الممثلات'],['works','i-film','الأعمال'],['recs','i-bulb','اقتراحات لك'],['explore','i-shuffle','استكشاف'],['lists','i-folder','مجموعاتي'],['me','i-chart','ملفي'],['sync','i-link','اتصال بالجوال'],['set','i-set','الإعدادات']];
+  const NAV=[['search','i-search','بحث'],['home','i-home','الرئيسية'],['lib','i-grid','الممثلات'],['works','i-film','الأعمال'],['recs','i-bulb','اقتراحات لك'],['explore','i-shuffle','استكشاف'],['studio','i-studio','الاستديو'],['lists','i-folder','مجموعاتي'],['me','i-chart','ملفي'],['sync','i-link','اتصال بالجوال'],['set','i-set','الإعدادات']];
   function build(){ if(root) return; root=document.createElement('div'); root.id='tv';
     root.innerHTML=`<div class="tv-bg"><img alt="" decoding="async"><img alt="" decoding="async"></div><div class="tv-shade"></div>
       <nav class="tv-nav"><div class="tv-logo"><svg class="mark"><use href="#logo"/></svg><b>المفضلة</b></div>${NAV.map(([k,ic,t])=>`<button class="f tv-ni" data-go="${k}" data-k="nav:${k}"><svg class="ic"><use href="#${ic}"/></svg><span>${t}</span></button>`).join('')}<div class="tv-ver" dir="ltr">v${esc(APP_VER.split(' ')[0])}</div></nav>
@@ -325,7 +325,7 @@ const TVApp=(()=>{
   const firstMain=()=>{ if(args.fk){ const e=main.querySelector(`[data-k="${CSS.escape(args.fk)}"]`); if(e) return e; }
     if(page==='search') return main.querySelector('.kb .f');
     return main.querySelector('.ex-ph,.cm-top .tb,.tv-grid .f,.tv-rows .f,.pp-head .tb,.me-s,.f'); };
-  function go(p,a,push){ if(p==='show'){ Gallery.playLibrary(); return; }
+  function go(p,a,push){ if(p==='show'){ Gallery.playLibrary(); return; } if(p==='studio'){ Studio.open(); return; }
     if(push!==false) stack.push({page,args:{...args,fk:focusKey()},of:offsets()}); if(stack.length>20) stack.shift();
     if(page==='search'&&p!=='search') saveQ(args.q);
     if(p==='person'&&a&&a.id) track(a.id);
@@ -511,6 +511,13 @@ const TVApp=(()=>{
   let lastKey=0, repeating=false, lpT=0, lpEl=null, lpFired=false;
   const quickable=t=>!!(t&&(t.dataset.p||t.dataset.cp||t.dataset.w||t.dataset.rec!=null)&&t.classList.contains('tvc'));
   function onKey(e){ if(!on) return; const k=e.key, t=e.target, typing=t&&(t.tagName==='TEXTAREA'||(t.tagName==='INPUT'&&!/^(checkbox|radio|button|submit|range|color|file)$/.test(t.type)));
+    const isBack=k==='Escape'||k==='GoBack'||k==='BrowserBack'||(k==='Backspace'&&!typing);
+    // الاستديو مفتوح فوق واجهة الشاشة: الرجوع والأسهم له
+    if(typeof Studio!=='undefined'&&Studio.isOpen()&&!document.querySelector('#ovAsk.show')){
+      if(Gallery.isOpen()){ if(isBack){ e.preventDefault(); e.stopImmediatePropagation(); Gallery.close(); } return; }
+      if(isBack){ e.preventDefault(); e.stopImmediatePropagation(); if(!Studio.tvBack()) setTimeout(()=>{ const n=document.querySelector('#tv [data-go="studio"]'); if(n) try{ n.focus(); }catch{} },60); return; }
+      if(/^Arrow/.test(k)&&!typing){ e.preventDefault(); e.stopImmediatePropagation(); Studio.move(k); return; }
+      return; }
     if(k==='Escape'||k==='GoBack'||k==='BrowserBack'||(k==='Backspace'&&!typing)){ e.preventDefault(); e.stopImmediatePropagation(); back().then(r=>{ if(!r&&IS_NATIVE){ try{ NATIVE.App.minimizeApp(); }catch{} } }); return; }
     if(/^Arrow/.test(k)){ if(typing&&(k==='ArrowLeft'||k==='ArrowRight')) return;
       e.preventDefault(); e.stopImmediatePropagation(); if(lpEl){ clearTimeout(lpT); lpEl=null; }

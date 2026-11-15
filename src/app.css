@@ -905,3 +905,81 @@ html[data-theme=amoled] .tv-info{background:#000}
 #tv[data-page="cmp"] .tv-bg,#tv[data-page="me"] .tv-bg,#tv[data-page="lists"] .tv-bg{display:none}
 .tv-sec h3 small{color:#a99db9;font-weight:500;font-size:.85rem;margin-right:.4rem}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ===== الاستديو ===== */
+#mStudio{--sg:4px;padding-bottom:40px}
+.shead{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.shead .sht{flex:1;min-width:0}.shead h2{margin:0;font-size:1.55rem;letter-spacing:.2px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.shead small{color:var(--muted);font-size:.8rem}
+.shead [data-act=back] .ic{transform:rotate(90deg)}
+.sstat{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:.78rem;min-height:22px;margin-bottom:10px}
+.sstat .spin{width:13px;height:13px}.swarn{color:var(--rose)}
+.slink{background:none;border:0;color:var(--acc2);font:inherit;font-size:.82rem;font-weight:600;padding:4px 2px;cursor:pointer}
+.stabs,.schips{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding:2px 0 12px;margin:0 -2px}.stabs::-webkit-scrollbar,.schips::-webkit-scrollbar{display:none}
+.stabs .chip,.schips .chip{flex:none}
+.ssec{margin:22px 0 4px}.ssh{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:10px}
+.ssh h3{margin:0;font-size:1.06rem}.ssh small{display:block;color:var(--muted);font-size:.76rem;margin-top:2px}
+.snote{color:var(--muted);font-size:.84rem;line-height:1.7}
+/* صورة اليوم */
+.shero{position:relative;display:block;width:100%;height:min(62vh,560px);border:0;padding:0;border-radius:22px;overflow:hidden;background:var(--c,var(--card));cursor:pointer;box-shadow:0 18px 50px -18px rgba(0,0,0,.8)}
+.shero img{width:100%;height:100%;object-fit:cover;object-position:50% 22%;opacity:0;transform:scale(1.04);transition:opacity .6s ease,transform 1.2s var(--ease)}
+.shero img.ok{opacity:1;transform:scale(1)}
+.shero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(8,5,14,.88))}
+.shc{position:absolute;inset:auto 18px 16px 18px;z-index:1;text-align:start;color:#fff;display:flex;flex-direction:column;gap:2px}
+.shc small{font-size:.72rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--acc2);font-weight:700}.shc b{font-size:1.5rem}.shc span{font-size:.78rem;opacity:.8}
+/* الشبكة المبرّرة */
+.sgrid{display:flex;flex-direction:column;gap:var(--sg)}.srow{display:flex;gap:var(--sg)}
+.sj{position:relative;flex:none;border:0;padding:0;border-radius:10px;overflow:hidden;background:var(--card);cursor:pointer}
+.sj img,.sst img,.sgem img,.spf img,.ssm img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .45s ease,transform .5s var(--ease)}
+.sj img.ok,.sst img.ok,.sgem img.ok,.spf img.ok,.ssm img.ok{opacity:1}
+@media (hover:hover){.sj:hover img{transform:scale(1.035)}}
+.sj.bad,.sst.bad{display:none}
+.sl{position:absolute;top:6px;inset-inline-start:7px;color:#fff;font-style:normal;font-size:.85rem;text-shadow:0 1px 4px rgba(0,0,0,.7)}
+.smore{display:block;margin:10px auto 0}
+/* الأشرطة الأفقية */
+.sstrip{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:4px;margin:0 -2px}.sstrip::-webkit-scrollbar{display:none}
+.sst{position:relative;flex:none;width:clamp(128px,34vw,200px);aspect-ratio:3/4;border:0;padding:0;border-radius:14px;overflow:hidden;background:var(--card);scroll-snap-align:start;cursor:pointer}
+.sst span{position:absolute;inset:auto 0 0 0;padding:20px 9px 7px;font-size:.74rem;color:#fff;text-align:start;background:linear-gradient(180deg,transparent,rgba(8,5,14,.85));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sgem{position:relative;display:block;width:100%;aspect-ratio:16/10;border:0;padding:0;border-radius:18px;overflow:hidden;background:var(--card);cursor:pointer;outline:1px solid color-mix(in srgb,var(--acc) 40%,transparent);outline-offset:3px}
+.sgem span{position:absolute;inset:auto 0 0 0;padding:26px 14px 11px;color:#fff;font-size:.84rem;text-align:start;background:linear-gradient(180deg,transparent,rgba(8,5,14,.85))}
+/* الجلسات والألبومات */
+.ssess{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.sses{border:0;padding:0;background:none;color:var(--text);text-align:start;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+.ssm{position:relative;aspect-ratio:4/5;border-radius:14px;overflow:hidden;background:var(--card);display:grid;grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr;gap:2px}
+.ssm img:first-child{grid-row:1/3}.ssm img:only-child{grid-column:1/3}
+.sses b{font-size:.84rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sses small{color:var(--muted);font-size:.72rem}
+.sae{grid-column:1/3;grid-row:1/3;display:grid;place-items:center;font-style:normal;font-size:2rem;color:var(--muted)}
+/* الممثلات */
+.sperfs{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:14px}
+.spf{border:0;padding:0;background:none;color:var(--text);cursor:pointer;display:flex;flex-direction:column;gap:3px;text-align:start}
+.spf img{aspect-ratio:3/4;border-radius:14px;background:var(--card)}.spf b{font-size:.82rem}.spf small{color:var(--muted);font-size:.72rem}
+.spfhead{display:flex;gap:14px;align-items:center;margin:4px 0 14px}.spfhead img{width:84px;height:110px;object-fit:cover;border-radius:16px;background:var(--card)}
+.spfhead b{font-size:1.2rem;display:block}.spfhead small{color:var(--muted);font-size:.76rem}
+.sbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+/* فارغ */
+.sempty{text-align:center;padding:50px 18px}.sempty p{color:var(--muted);line-height:1.8;max-width:420px;margin:8px auto 18px}
+.sorb{width:110px;height:110px;margin:0 auto 18px;border-radius:50%;background:conic-gradient(from 0deg,var(--acc),var(--rose),var(--acc2),var(--acc));filter:blur(.5px);animation:sspin 9s linear infinite;mask:radial-gradient(circle,transparent 48%,#000 50%)}
+@keyframes sspin{to{transform:rotate(360deg)}}
+/* الإعدادات */
+.sset h4{margin:18px 0 7px;font-size:.88rem}.sset p{color:var(--muted);font-size:.82rem;margin:0}
+.srcsw{display:flex;align-items:center;gap:9px;padding:7px 0;font-size:.88rem}
+.salist{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+/* شريط إجراءات العارض */
+#lbx .lact{position:absolute;inset:auto 0 calc(env(safe-area-inset-bottom) + 14px) 0;z-index:3;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;padding:0 10px}
+#lbx .lact[hidden]{display:none}
+#lbx.acts .lcap{bottom:calc(env(safe-area-inset-bottom) + 70px)}
+#lbx .lab{width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(16,10,26,.62);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;font-size:1.05rem;display:grid;place-items:center;cursor:pointer;transition:transform .15s}
+#lbx .lab.on{color:#ff6b8f;border-color:#ff6b8f}#lbx .lab:active{transform:scale(.9)}
+#lbx.idle .lact{opacity:0;transition:opacity .4s}
+@media (min-width:900px){ .ssess{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))} .sperfs{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))} }
+/* حوارات تُفتح من داخل العارض (الاستديو) تظهر فوقه */
+#lbx.show ~ #ovAsk,body:has(#lbx.show) #ovAsk{z-index:130}
+/* الاستديو على التلفاز: ملء الشاشة فوق الواجهة، وإطار تركيز واضح */
+html.tvapp #ovStudio.show{display:flex!important;inset:0;z-index:35}
+html.tvapp #mStudio{padding:28px 48px 40px}
+html.tvapp #mStudio :is(button,select,input):focus{outline:3px solid #fff;outline-offset:3px}
+html.tvapp #mStudio .sj:focus,html.tvapp #mStudio .sst:focus{transform:scale(1.04);z-index:2}
+html.tvapp #lbx .lab:focus{outline:3px solid #fff}
+.sgem{aspect-ratio:auto;height:min(56vh,460px)}
+.sgem img{object-position:50% 25%}
+@media (min-width:900px){.sgem{height:min(60vh,520px)}}

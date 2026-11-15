@@ -41,6 +41,7 @@
 <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.5 4M20 20v-4h-4"/></symbol>
 <symbol id="i-like" viewBox="0 0 24 24"><path d="M7 11v9H4v-9z"/><path d="M7 11l4-7c1.6 0 2.6 1.2 2.2 2.8L12.7 9H19a2 2 0 0 1 2 2.3l-1 6A2 2 0 0 1 18 19H7"/></symbol>
 <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1.1 2.2h5c.1-1 .5-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></symbol>
+<symbol id="i-studio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3l3.5 6M21 12h-7M16.5 19.8L13 13.5M7.5 19.8L11 13.5M3 12h7M7.5 4.2L11 10.5"/></symbol>
 <symbol id="i-slides" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M10 9l4 2-4 2zM8 21h8"/></symbol>
 </defs></svg>
 
@@ -77,6 +78,7 @@
   <button class="nb on" id="nHome"><svg class="ic"><use href="#i-grid"/></svg><span>المكتبة</span></button>
   <button class="nb" id="nWorks"><svg class="ic"><use href="#i-film"/></svg><span>الأعمال</span><i id="wDot" class="wdot" style="display:none"></i></button>
   <button class="nb" id="nRecs"><svg class="ic"><use href="#i-bulb"/></svg><span>اكتشف</span></button>
+  <button class="nb" id="nStudio"><svg class="ic"><use href="#i-studio"/></svg><span>الاستديو</span><i id="sDot" class="wdot" style="display:none"></i></button>
   <button class="nb" id="nMore"><svg class="ic"><use href="#i-more"/></svg><span>المزيد</span></button>
 </nav>
 <button class="fab" id="bAdd" aria-label="إضافة ممثلة"><svg class="ic"><use href="#i-plus"/></svg></button>
@@ -108,6 +110,7 @@
 <div class="overlay page" id="ovWorks"><div class="modal" id="mWorks"></div></div>
 <div class="overlay page" id="ovStats"><div class="modal" id="mStats"></div></div>
 <div class="overlay page" id="ovRecs"><div class="modal" id="mRecs"></div></div>
+<div class="overlay page" id="ovStudio"><div class="modal" id="mStudio"></div></div>
 <div class="overlay page" id="ovLists"><div class="modal" id="mLists"></div></div>
 <div class="overlay full" id="ovDuel"><div class="modal" id="mDuel"></div></div>
 <div class="overlay full" id="ovTier"><div class="modal" id="mTier"></div></div>
@@ -211,7 +214,7 @@
   <div class="lstage"><img class="la" alt=""><img class="lb" alt=""></div>
   <div class="ltop"><button type="button" class="ib glass" data-lb="close" aria-label="إغلاق"><svg class="ic"><use href="#i-x"/></svg></button><span class="lc"></span><button type="button" class="ib glass" data-lb="play" aria-label="تشغيل / إيقاف"><svg class="ic"><use href="#i-play"/></svg></button></div>
   <button type="button" class="lnav prev" data-lb="prev" aria-label="السابقة">›</button><button type="button" class="lnav next" data-lb="next" aria-label="التالية">‹</button>
-  <div class="lcap"></div><div class="lbar"><i></i></div>
+  <div class="lcap"></div><div class="lact" hidden></div><div class="lbar"><i></i></div>
 </div>
 
 <button id="toTop" aria-label="للأعلى"><svg class="ic"><use href="#i-chev"/></svg></button>

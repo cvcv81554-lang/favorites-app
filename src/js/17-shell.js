@@ -17,9 +17,9 @@ const busy={ show(t,onCancel){ $('busyT').textContent=t||''; const x=$('busyX');
   hide(){ $('busy').classList.remove('show'); $('busyX').hidden=true; } };
 
 (function(){
-  const PAGES=['ovHome','ovWorks','ovStats','ovRecs','ovLists','ovMore'];
-  const NAV={ovHome:'nDash',ovWorks:'nWorks',ovRecs:'nRecs',ovMore:'nMore',ovStats:'nMore',ovLists:'nMore'};
-  const NBS=['nDash','nHome','nWorks','nRecs','nMore'];
+  const PAGES=['ovHome','ovWorks','ovStats','ovRecs','ovLists','ovMore','ovStudio'];
+  const NAV={ovHome:'nDash',ovWorks:'nWorks',ovRecs:'nRecs',ovMore:'nMore',ovStats:'nMore',ovLists:'nMore',ovStudio:'nStudio'};
+  const NBS=['nDash','nHome','nWorks','nRecs','nStudio','nMore'];
   const ovs=[...document.querySelectorAll('.overlay')];
   const shown=()=>ovs.filter(o=>o.classList.contains('show'));
   const zOf=o=>+getComputedStyle(o).zIndex||0;
@@ -35,7 +35,7 @@ const busy={ show(t,onCancel){ $('busyT').textContent=t||''; const x=$('busyX');
     syncNav(); document.body.classList.toggle('modal-open',shown().some(o=>!PAGES.includes(o.id))); });
   ovs.forEach(o=>mo.observe(o,{attributes:true,attributeFilter:['class']}));
   $('nRecs').onclick=()=>{ if(window.openRecs) window.openRecs(); };
-  $('nHome').addEventListener('click',()=>{ closeOv('ovRecs'); closeOv('ovHome'); closeOv('ovMore');
+  $('nHome').addEventListener('click',()=>{ closeOv('ovRecs'); closeOv('ovHome'); closeOv('ovMore'); closeOv('ovStudio');
     if(document.documentElement.classList.contains('tv')) setTimeout(()=>{ const c=document.querySelector('#grid .card'); if(c){ c.tabIndex=-1; try{ c.focus({preventScroll:true}); }catch{} } },120); });
   // الضغط على تبويب مفتوح يعيده لأعلاه
   document.querySelector('nav.dock').addEventListener('click',e=>{ const b=e.target.closest('.nb'); if(!b) return; const ov=Object.keys(NAV).find(k=>NAV[k]===b.id&&$(k).classList.contains('show')); if(ov){ const m=$(ov).querySelector('.modal'); if(m) m.scrollTop=0; } },true);

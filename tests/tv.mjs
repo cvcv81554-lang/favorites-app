@@ -155,7 +155,7 @@ const visible = () => T.evaluate(() => { const a = document.activeElement; if (!
 // القائمة الجانبية: كل العناصر ظاهرة وقابلة للوصول بالأسهم
 await T.evaluate(() => document.querySelector('#tv .tv-nav .f').focus()); const navSeen = [];
 for (let k = 0; k < 12; k++) { navSeen.push(await T.evaluate(() => { const a = document.activeElement, r = a.getBoundingClientRect(); return r.bottom <= innerHeight && r.top >= 0 ? a.dataset.go : 'OFF'; })); await T.keyboard.press('ArrowDown'); await settle(T, 60); }
-ok('القائمة الجانبية: كل الأقسام العشرة ظاهرة ويُوصل إليها بالأسهم', new Set(navSeen.filter(x => x !== 'OFF')).size === 10 && !navSeen.includes('OFF'), navSeen.join(','));
+ok('القائمة الجانبية: كل الأقسام الأحد عشر (مع الاستديو) ظاهرة ويُوصل إليها بالأسهم', new Set(navSeen.filter(x => x !== 'OFF')).size === 11 && !navSeen.includes('OFF'), navSeen.join(','));
 await goNav('lib'); await T.screenshot({ path: join(out, 'tv-06-library.png') });
 ok('المكتبة: شبكة كل الممثلات', await T.evaluate(() => document.querySelectorAll('#tv .tv-grid .tvp').length === items.length));
 await T.keyboard.press('ArrowDown'); await T.keyboard.press('ArrowDown'); await settle(T, 300); const g0 = await act(T); await T.keyboard.press('ArrowDown'); await settle(T, 300);

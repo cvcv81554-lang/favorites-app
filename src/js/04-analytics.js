@@ -278,10 +278,13 @@ function mapSx(p) { const m = mapS(p), ms = p.measurements || {};
   m.at = { c: m.cc, e: ethNorm(p.ethnicity), hr: hairNorm(p.hair_color), ey: eyeNorm(p.eye_color), cp: cupBucket(ms.cup_size || p.cup_size), h: parseHeight(p.height), cs: +p.career_start_year || 0 }; return m; }
 function mapPx(p) { const ex = p.extras || p.extra || {}, b = String(ex.birthday || p.birthday || '').match(/^\d{4}-\d{2}-\d{2}/), im = imgsOf(p), bp = String(ex.birthplace || '');
   const cc = ctryCode(ex.nationality) || ctryCode(ex.birthplace_code) || ctryCode(bp.split(',').pop());
-  return { name: p.name || '', aliases: aliasStr(p.aliases), country: ex.nationality || ex.birthplace_code || bp || '', birth: b ? b[0] : '', img: im[0] || '', pdbId: p.id, src: 'ThePornDB', gender: String(ex.gender || p.gender || '').toLowerCase(), cc,
+  return { name: p.name || '', aliases: aliasStr(p.aliases), country: ex.nationality || ex.birthplace_code || bp || '', birth: b ? b[0] : '', birthRaw: String(ex.birthday || p.birthday || '').trim().slice(0, 10), img: im[0] || '', pdbId: p.id, src: 'ThePornDB', gender: String(ex.gender || p.gender || '').toLowerCase(), cc,
     at: { c: cc, e: ethNorm(ex.ethnicity), hr: hairNorm(ex.hair_colour), ey: eyeNorm(ex.eye_colour), cp: cupBucket(ex.cupsize || ex.measurements), h: parseHeight(ex.height), cs: +ex.career_start_year || 0 } }; }
 const slimCand = c => { const o = { k: norm(c.name), name: c.name, aliases: c.aliases || '', img: c.img || '', cc: c.cc || '', country: c.country || '', birth: c.birth || '', birthRaw: c.birthRaw || '', src: c.src, gender: c.gender, at: c.at || {}, t: Date.now() };
-  if (c.stashId) o.stashId = c.stashId; if (c.pdbId) o.pdbId = c.pdbId; if (c.ofId) o.ofId = c.ofId; if (c.fsId) o.fsId = c.fsId; if (c.px) o.px = c.px; if (c.urls && c.urls.length) o.urls = c.urls.slice(0, 6); return o; };
+  if (c.stashId) o.stashId = c.stashId; if (c.pdbId) o.pdbId = c.pdbId; if (c.ofId) o.ofId = c.ofId; if (c.fsId) o.fsId = c.fsId; if (c.px) o.px = c.px; if (c.urls && c.urls.length) o.urls = c.urls.slice(0, 6);
+  o.bs = Object.assign({}, c.bs || {}, birthSrcOf(c)); return o; };
+// تاريخ الميلاد حسب المصدر: stash / tpdb / other (لا يُدمج بصمت: التضارب يُكتشف في «اكتشافات 18–21»)
+function birthSrcOf(c) { const v = String(c.birthRaw || c.birth || '').trim(); if (!v) return {}; const s = /stash/i.test(c.src || '') ? 'stash' : /porndb/i.test(c.src || '') ? 'tpdb' : 'other'; return { [s]: v.slice(0, 10) }; }
 
 // ---------- جمع المرشّحات (واسع، مبني على الصفات والذوق لا على الزميلات) ----------
 function recSpecs(P, round) {
@@ -361,7 +364,7 @@ async function refillPool(P, round, progress) {
   const idx = libIndex(), ign = new Set(_recIgnored.map(norm)), seen = new Map(_recPool.list.map(c => [c.k, c]));
   const raw = await recGather(P, round, progress); const fresh = []; let detail = 0, vdet = 0;
   for (const c of raw) { const k = norm(c.name); if (!k) continue; const ex = seen.get(k);
-    if (ex) { ['stashId', 'pdbId', 'ofId', 'fsId', 'px', 'img'].forEach(f => { if (!ex[f] && c[f]) ex[f] = c[f]; }); if (c.at) Object.keys(c.at).forEach(f => { if (!ex.at[f] && c.at[f]) ex.at[f] = c.at[f]; }); if (!ex.gender && c.gender) ex.gender = c.gender; continue; }
+    if (ex) { ex.bs = Object.assign(birthSrcOf(c), ex.bs || {}); ['stashId', 'pdbId', 'ofId', 'fsId', 'px', 'img'].forEach(f => { if (!ex[f] && c[f]) ex[f] = c[f]; }); if (c.at) Object.keys(c.at).forEach(f => { if (!ex.at[f] && c.at[f]) ex.at[f] = c.at[f]; }); if (!ex.gender && c.gender) ex.gender = c.gender; continue; }
     if (c.pdbId && (!c.gender || !c.birth) && !c.stashId) { if (detail >= 14) continue; detail++; try { progress(`ThePornDB: التحقق من بيانات ${c.name}…`); Object.assign(c, await pdbDetail(c.pdbId)); await recSleep(120); } catch { continue; } }
     if (c.vx && (!c.gender || !c.birth)) { if (vdet >= 10) continue; vdet++; progress(`التحقق من ${c.name} (${c.src})…`); if (!(await VX.verify(c))) continue; await recSleep(120); }
     if (!c.gender) continue; // لا نقبل إلا أنثى مؤكّدة

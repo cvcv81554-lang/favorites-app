@@ -145,6 +145,7 @@ const TVApp=(()=>{
   function recs(){ const l=(_recCache.list||[]), keys=!!(LS.get('vkte_key')||LS.get('vkte_stash')); gridList=l; gridCard=null;
     return `<div class="tv-page tv-scroll"><header class="tv-ph"><h1>اقتراحات لك</h1><span>${l.length?l.length+' ممثلة جديدة مرتبة حسب توافقها مع ذوقك':''}</span></header>
       ${keys?`<section class="tv-sec" data-row="ra"><div class="tv-hs tvch">${btn('rref','⟳ تجديد الاقتراحات','data-act="rref"','chip pri')}</div></section>`:''}
+      ${l.length&&typeof Discover!=='undefined'?Discover.tvLanes().map(([t,ls],i)=>row('rl'+i,esc(t),ls.slice(0,ROWLIM).map(c=>{ const n=l.indexOf(c), v=/18–21/.test(t)?Discover.young(c):null; const h=recCard(c,n); return v?h.replace(/<small>[\s\S]*?<\/small>/,`<small>✓ ${v.age} سنة · ${v.srcs.map(x=>x==='stash'?'StashDB':'ThePornDB').join(' و')}</small>`):h; }))).join('')+'<h3 class="tv-gh">كل الاقتراحات</h3>':''}
       ${l.length?`<div class="tv-grid">${l.map(recCard).join('')}</div>`:`<p class="tv-note">${keys?'اضغط «تجديد الاقتراحات» لجلب ممثلات جديدات تناسب ذوقك.':'الاقتراحات تحتاج مفتاح ThePornDB أو StashDB. فعّل «أرسل مفاتيح المصادر للشاشة» من جوالك ← الشاشة والمزامنة.'}</p>`}<div class="tv-pad"></div></div>`; }
 
   // --- البحث: لوحة مفاتيح على الشاشة + صوت + سجل ---

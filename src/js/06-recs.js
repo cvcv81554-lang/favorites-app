@@ -9,7 +9,8 @@
   const SAVED_KEY = 'vkte_rec_saved', UI_KEY = 'vkte_rec_ui', SEEN_KEY = 'vkte_rec_seen';
   const jget = (k, d) => { try { const v = JSON.parse(LS.get(k, 'null')); return v == null ? d : v; } catch { return d; } };
   const jset = (k, v) => LS.set(k, JSON.stringify(v));
-  const ui = Object.assign({ view: 'all', sort: 'match', mode: 'grid' }, jget(UI_KEY, {}));
+  const ui = Object.assign({ view: 'lanes', sort: 'match', mode: 'grid' }, jget(UI_KEY, {}));
+  if (!ui.v34) { ui.view = 'lanes'; ui.v34 = 1; }   // مرة واحدة: الواجهة الجديدة هي الافتتاحية (بقية التبويبات كما هي)
   const saveUi = () => jset(UI_KEY, ui);
   const RS = { cc: '', want: 24, busy: false, msg: '', err: '', hide: new Set(), pend: null, roots: new Set(), deck: 0, skipped: new Set(), P: null };
   let saved = jget(SAVED_KEY, []);
@@ -120,7 +121,7 @@
     const el = root.querySelector('.rx-bar'); if (!el) return;
     const nAll = (_recCache.list || []).filter(c => !RS.hide.has(kOf(c))).length, nExp = (_recCache.list || []).filter(c => c.explore && !RS.hide.has(kOf(c))).length;
     const tab = (v, t, n) => `<button type="button" class="rx-t ${ui.view === v ? 'on' : ''}" data-v="${v}">${t}<em>${n}</em></button>`;
-    el.innerHTML = `<div class="rx-tabs">${tab('all', 'الكل', nAll)}${tab('explore', 'استكشاف', nExp)}${tab('saved', '🔖 المحفوظة', saved.length)}</div>
+    el.innerHTML = `<div class="rx-tabs">${tab('lanes', '✨ لك', '')}${tab('all', 'الكل', nAll)}${tab('explore', 'استكشاف', nExp)}${tab('saved', '🔖 المحفوظة', saved.length)}</div>
       <div class="rx-tools"><select class="sel" data-sort aria-label="الترتيب"><option value="match" ${ui.sort === 'match' ? 'selected' : ''}>الأعلى توافقًا</option><option value="new" ${ui.sort === 'new' ? 'selected' : ''}>الأحدث اكتشافًا</option><option value="young" ${ui.sort === 'young' ? 'selected' : ''}>الأصغر عمرًا</option></select>
       <div class="rx-seg"><button type="button" class="${ui.mode === 'grid' ? 'on' : ''}" data-mode="grid" aria-label="شبكة">▦</button><button type="button" class="${ui.mode === 'deck' ? 'on' : ''}" data-mode="deck" aria-label="بطاقات">🂠</button></div></div>`;
   }
@@ -137,6 +138,8 @@
     if (!hasKeys()) {
       el.innerHTML = `<div class="rx-empty"><b>مفاتيح API مطلوبة للاقتراحات</b><p>تُستخرج الاقتراحات من ThePornDB و StashDB و OnlyFansAPI و Fansly API للإناث البالغات فقط. أضف مفتاح أحدها في الإعدادات (التحقق من العمر والجنس يتم عبر StashDB/ThePornDB).</p><button type="button" class="btn gold" id="recGoSet2">${icon('set')} فتح الإعدادات</button></div>`; more.innerHTML = ''; return;
     }
+    if (ui.view === 'lanes' && typeof Discover !== 'undefined') { root.querySelector('.rx-cc').innerHTML = ''; more.innerHTML = '';
+      el.innerHTML = Discover.lanesHtml(root.dataset.sa === '1'); Discover.wire(el); return; }
     const l0 = baseList(); paintCC(root, l0);
     const l = visible();
     if (RS.busy && !l.length) { el.innerHTML = '<div class="rx-sk">' + '<i></i>'.repeat(4) + '</div>'; more.innerHTML = ''; return; }
@@ -146,6 +149,7 @@
     }
     if (ui.mode === 'deck') { el.innerHTML = deckHtml(l); more.innerHTML = ''; bindDeck(root); return; }
     el.innerHTML = `<div class="rx-grid">${l.map(cardHtml).join('')}</div>`;
+    if (typeof Discover !== 'undefined') Discover.seen(l.slice(0, 24));
     const canMore = ui.view !== 'saved' && !RS.cc && (_recPool.list || []).length > (_recCache.list || []).length && RS.want < 96;
     more.innerHTML = canMore ? '<button type="button" class="btn" data-act="more">عرض المزيد ↓</button>' : '';
   }
@@ -197,7 +201,7 @@
   function doSave(c) {
     const k = kOf(c), i = saved.findIndex(s => kOf(s) === k);
     if (i >= 0) { saved.splice(i, 1); toast('أُزيلت من المحفوظة'); }
-    else { const o = Object.assign({}, c, { savedAt: Date.now() }); saved.push(o); toast('حُفظت لوقت لاحق 🔖'); }
+    else { const o = Object.assign({}, c, { savedAt: Date.now() }); saved.push(o); toast('حُفظت لوقت لاحق 🔖'); try { const h = _recFeedback.hist || (_recFeedback.hist = {}), hk = 'sv:' + k; if (!h[hk]) { learnFrom(recKeysOf(c), c.fs, c.raw, true, 0.3); h[hk] = Date.now(); saveRecFeedback(); } } catch {} }   // الحفظ إشارة إعجاب خفيفة: مرة لكل اسم ولا تُحتسب «قبولًا»
     saveSaved(); repaintAll();
   }
   function doAdd(c) {
@@ -277,7 +281,7 @@
 
   // ---------- نقاط الدخول ----------
   function mount(root, standalone) {
-    skeleton(root, standalone); RS.roots.add(root); bind(root);
+    skeleton(root, standalone); root.dataset.sa = standalone ? '1' : '0'; RS.roots.add(root); bind(root);
     if (hasKeys()) { try { localRank(); } catch (e) { console.warn('rec rank', e); } }
     paintAll(root);
     if (!hasKeys()) return;
@@ -305,6 +309,8 @@
   previewRecPerformer = function (c) { preview(c); };
   window.recsOnChange = function () { repaintAll(); if ($$('ovStats').classList.contains('show') && statsTab === 'overview') drawStatsModal(); };
   window.openRecs = openRecs;
+  // للوحدة 34-discover: نفس البطاقة والإجراءات (الأزرار داخل .rx تعمل عبر نفس المعالج)
+  window.RecsUI = { cardHtml, kOf, repaintAll, localRank, get RS() { return RS; } };
   window.recsRerank = () => { try { localRank(); } catch (e) { console.warn('rerank', e); } repaintAll(); };
   addEventListener('pagehide', flushPend);
   document.addEventListener('visibilitychange', () => { if (document.hidden) flushPend(); });

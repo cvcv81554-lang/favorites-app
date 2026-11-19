@@ -59,14 +59,9 @@ setArr('BGTaskSchedulerPermittedIdentifiers', ['com.favlib.app.check']);
 setArr('UIBackgroundModes', ['fetch', 'processing']);
 s = readFileSync(del, 'utf8');
 if (!s.includes('CapacitorBackgroundRunner')) {
-  const b = s.replace(/import Capacitor
-/, 'import Capacitor
-import CapacitorBackgroundRunner
-')
+  const b = s.replace(/import Capacitor\n/, 'import Capacitor\nimport CapacitorBackgroundRunner\n')
     .replace(/(func application\(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: \[UIApplication\.LaunchOptionsKey: Any\]\?\) -> Bool \{)/,
-      '$1
-        BackgroundRunnerPlugin.registerBackgroundTask()
-        BackgroundRunnerPlugin.handleApplicationDidFinishLaunching(launchOptions: launchOptions)');
+      '$1\n        BackgroundRunnerPlugin.registerBackgroundTask()\n        BackgroundRunnerPlugin.handleApplicationDidFinishLaunching(launchOptions: launchOptions)');
   if (!b.includes('import CapacitorBackgroundRunner') || !b.includes('registerBackgroundTask()')) { console.error('تعذّر تسجيل Background Runner في AppDelegate'); process.exit(1); }
   writeFileSync(del, b);
 }

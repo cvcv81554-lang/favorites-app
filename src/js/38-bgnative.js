@@ -7,7 +7,7 @@ const BgNative=(()=>{
   const LABEL='com.favlib.app.check', ON='vkte_bgn';
   const BR=()=>window.Native&&Native.isNative&&Native.BackgroundRunner||null;
   const enabled=()=>LS.get(ON,'0')==='1';
-  const adultsWithStash=()=>items.filter(i=>i&&i.stashId&&!minorRec(i)).map(i=>({s:String(i.stashId),n:String(i.name||'').slice(0,60)}));
+  const adultsWithStash=()=>items.filter(i=>i&&i.stashId&&!minorRec(i)).map(i=>({s:String(i.stashId)}));   // المعرّف فقط، بلا أسماء
   async function config(){ const br=BR(); if(!br) return false;
     try{ await br.dispatchEvent({label:LABEL,event:'config',details:{key:LS.get('vkte_stash',''),on:enabled()&&(typeof Sched==='undefined'||Sched.mode()!=='off'),ids:enabled()?adultsWithStash():[]}}); return true; }catch(e){ console.warn('bg config',e); return false; } }
   async function collect(){ const br=BR(); if(!br) return 0;

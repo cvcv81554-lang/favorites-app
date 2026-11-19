@@ -28,7 +28,7 @@ const scenes = { data: { queryScenes: { scenes: [{ id: 'sc1', title: 'New One', 
   ok('المشغّل: يقبل معرّفات StashDB الصالحة فقط', JSON.parse(R.kv.fav_bg_cfg).ids.length === 1);
   const r = await R.call('checkNew');
   ok('المشغّل: طلب واحد لـ StashDB الرسمي بالمفتاح', R.reqs.length === 1 && R.reqs[0].u === 'https://stashdb.org/graphql' && R.reqs[0].o.headers.ApiKey === 'K');
-  ok('المشغّل: يحفظ أعمال ممثلات القائمة فقط ويرسل إشعارًا واحدًا', r.added === 1 && JSON.parse(R.kv.fav_bg_found).length === 1 && R.notes.length === 1 && /Ann/.test(R.notes[0][0].body), JSON.stringify(r));
+  ok('المشغّل: يحفظ أعمال ممثلات القائمة فقط ويرسل إشعارًا واحدًا عامًا بلا أسماء (شاشة القفل)', r.added === 1 && JSON.parse(R.kv.fav_bg_found).length === 1 && R.notes.length === 1 && !/Ann|New One/.test(JSON.stringify(R.notes)), JSON.stringify(r));
   ok('المشغّل: لا يعيد السؤال قبل 6 ساعات (بطارية/بيانات)', (await R.call('checkNew')).skip === 'recent' && R.reqs.length === 1);
   const col = await R.call('collect');
   ok('المشغّل: «collect» يعيد النتائج ثم يفرّغها', col.found.length === 1 && JSON.parse(R.kv.fav_bg_found).length === 0);

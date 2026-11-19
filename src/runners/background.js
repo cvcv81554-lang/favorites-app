@@ -41,9 +41,9 @@ addEventListener('checkNew', async (resolve, reject) => {
     sc.forEach(s => { if (!s || !s.id || seen.has(s.id)) return; const ps = (s.performers || []).map(p => p && p.performer && p.performer.id).filter(id => names.has(id)); if (!ps.length) return;
       prev.push({ id: s.id, t: String(s.title || '').slice(0, 200), d: String(s.release_date || s.date || '').slice(0, 10), st: String((s.studio && s.studio.name) || '').slice(0, 120), ps }); seen.add(s.id); add++; ps.forEach(id => who.add(names.get(id))); });
     setJ(FOUND, prev.slice(-300)); setJ(LAST, { at: Date.now(), day: ymd(now), n: add });
+    // الإشعار عام بلا أسماء ولا عناوين (يظهر على شاشة القفل): التفاصيل داخل التطبيق فقط
     if (add) {
-      const nm = [...who].filter(Boolean).slice(0, 3).join('، ');
-      try { CapacitorNotifications.schedule([{ id: 4200 + (Date.now() % 1000), title: 'المفضلة: أعمال جديدة', body: add + ' عمل جديد' + (nm ? ' — ' + nm : ''), scheduleAt: new Date(Date.now() + 2000) }]); } catch (e) {}
+      try { CapacitorNotifications.schedule([{ id: 4200 + (Date.now() % 1000), title: 'المفضلة', body: 'تحديثات جديدة في مكتبتك', scheduleAt: new Date(Date.now() + 2000) }]); } catch (e) {}
     }
     resolve({ added: add });
   } catch (e) { reject(e); }

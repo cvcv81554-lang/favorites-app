@@ -111,19 +111,34 @@ const Discover=(()=>{
       <div class="dx-strip">${list.slice(0,n).map(c=>cw(c,opt)).join('')}</div><div class="dx-grid" hidden></div></section>`; }
   const recentNames=()=>{ const r=jget('vkte_recent',[]).slice(0,6); return r.map(id=>items.find(i=>i.id===id)).filter(Boolean).map(i=>i.name); };
   let query='';
+  // (v36) فلاتر سريعة فوق المسارات: شريحة العمر + المؤكدة فقط. تُحفظ على الجهاز (وفي النسخة الاحتياطية)
+  const F_KEY='vkte_dx_f', FAGE=[['','كل الأعمار'],['a','18–24'],['b','25–29'],['c','30–35'],['d','36+']];
+  const flt=()=>{ const f=jget(F_KEY,{}); return {age:FAGE.some(x=>x[0]===f.age)?f.age:'',conf:!!f.conf}; };
+  const applyF=l=>{ const f=flt(); return l.filter(c=>(!f.age||ageBand(c)===f.age)&&(!f.conf||confirmed(c))); };
+  const fbar=()=>{ const f=flt(); return `<div class="dx-flt" role="group" aria-label="تصفية الاقتراحات">${FAGE.map(([k,t])=>`<button type="button" class="chip ${f.age===k?'on':''}" aria-pressed="${f.age===k}" data-dxf="age" data-val="${k}">${k?`<span dir="ltr">${t}</span>`:t}</button>`).join('')}<button type="button" class="chip ${f.conf?'on':''}" aria-pressed="${f.conf}" data-dxf="conf" data-val="${f.conf?'':'1'}">✅ المؤكدة فقط</button></div>`; };
+  // آخر ممثلة أضفتها (خلال 30 يومًا) — «لأنك أضفت…»
+  const lastAdded=()=>items.filter(i=>i.added&&Date.now()-i.added<30*864e5&&!minorRec(i)).sort((a,b)=>b.added-a.added)[0];
   function lanesHtml(discover){
-    const all=ranked();
+    const all0=ranked(), all=applyF(all0);
+    const sbox=`<div class="dx-search"><input class="in" type="search" data-dxq name="dxq" aria-label="البحث في الاقتراحات" placeholder="ابحث في الاقتراحات بالاسم أو البلد…" value="${esc(query)}" autocomplete="off" enterkeyhint="search"></div>`;
+    if(all0.length&&!all.length&&!query) return sbox+fbar()+`<div class="rx-empty"><b>لا اقتراحات بهذه التصفية</b><p>جرّب شريحة عمر أخرى أو ألغِ «المؤكدة فقط».</p></div>`;
     if(!all.length) return `<div class="rx-empty"><b>لا اقتراحات بعد</b><p>اضغط «تجديد» لجلب دفعة أولى تناسب ذوقك. كلما قيّمتِ وأضفتِ أكثر، صارت الاقتراحات أدق.</p></div>`;
     const yr=new Date().getFullYear(), yng=all.filter(c=>young(c));
     let h=`<div class="dx-search"><input class="in" type="search" data-dxq name="dxq" aria-label="البحث في الاقتراحات" placeholder="ابحث في الاقتراحات بالاسم أو البلد…" value="${esc(query)}" autocomplete="off" enterkeyhint="search"></div>`;
-    if(query){ const q=norm(query), l=all.filter(c=>norm(c.name).includes(q)||norm(c.aliases||'').includes(q)||norm(ctryName(c.cc||'')).includes(q));
+    if(query){ const q=norm(query), l=all0.filter(c=>norm(c.name).includes(q)||norm(c.aliases||'').includes(q)||norm(ctryName(c.cc||'')).includes(q));
       return h+(l.length?`<div class="dx-grid">${l.slice(0,48).map(c=>cw(c,{})).join('')}</div>`:`<div class="rx-empty"><p>لا نتائج لـ«${esc(query)}».</p></div>`); }
+    h+=fbar();
     const shown=[];
+    const la=lastAdded(), byAdd=la?all.filter(c=>(c.near||[]).includes(la.name)):[];
+    const fresh7=all.filter(c=>c.t&&Date.now()-c.t<7*864e5&&impN(c.k||norm(c.name))<2);   // ظهرت مرة على الأكثر (الظهور يُسجَّل مرة في اليوم)
     const take=(l)=>{ shown.push(...l.slice(0,6)); return l; };
     if(discover){
-      const day=stablePick('day',todayK(),all,6,2), week=stablePick('week',weekK(),all.filter(confirmed),8,3,true);
+      // الاختيار الثابت يُحسب من القائمة كاملة ثم يُصفّى للعرض (الفلتر لا يستبدل اختيار اليوم/الأسبوع المحفوظ)
+      const day=applyF(stablePick('day',todayK(),all0,6,2)), week=applyF(stablePick('week',weekK(),all0.filter(confirmed),8,3,true));
       h+=lane('day','☀️ اكتشاف اليوم','مجموعة جديدة كل يوم من أنسب المرشحات لك',take(day),{n:6});
       h+=lane('week','🗓 مختارات الأسبوع','الأفضل توافقًا هذا الأسبوع، متنوعة',take(week),{n:8});
+      if(la) h+=lane('added','➕ لأنك أضفت '+esc(la.name),'مرشحات تشبه آخر ممثلة أضفتها',take(byAdd));
+      h+=lane('fresh','🆕 جديدة في قائمتك','دخلت قائمة الاقتراحات هذا الأسبوع ولم تظهر لك بعد',take(fresh7));
       h+=lane('young','🌱 اكتشافات 18–21','بالغات بين 18 و21 عامًا بتاريخ ميلاد موثّق من قاعدة بيانات · العمر محسوب اليوم',take(yng),{age:1});
       const near=all.filter(c=>(c.near||[]).length); h+=lane('near','👯 قريبات من مفضلاتك','يشبهن ممثلات تحبهن في الخصائص',take(near));
       const st=all.filter(c=>c.cx&&(c.cx.st||[]).length); h+=lane('studio','🎬 من استوديوهات تحبها','لها أعمال مع استوديوهات تتكرر في مفضلاتك',take(st));
@@ -134,6 +149,7 @@ const Discover=(()=>{
     } else {
       const conf=all.filter(confirmed), lim=all.filter(c=>!confirmed(c)), rn=recentNames();
       h+=lane('conf','✅ توصيات مؤكدة','مبنية على بيانات كافية وتوافق واضح مع ذوقك',take(conf),{n:12});
+      if(la) h+=lane('added','➕ لأنك أضفت '+esc(la.name),'',take(byAdd));
       rn.slice(0,2).forEach((nm,i)=>{ const l=all.filter(c=>(c.near||[]).includes(nm)); h+=lane('rec'+i,`🔁 لأنك تصفحت ${esc(nm)} مؤخرًا`,'',take(l)); });
       h+=lane('young','🌱 اكتشافات 18–21 · حسب ذوقك','موثّقات العمر، ومرتبات حسب تشابههن مع مفضلاتك',take(yng.filter(c=>(c.raw||0)>=0.45)),{age:1});
       h+=lane('limited','🧪 بيانات محدودة','توافق محتمل لكن بيانات المرشحة قليلة — تقييمك يحسم',take(lim));
@@ -153,11 +169,13 @@ const Discover=(()=>{
       g.hidden=!open; st.hidden=open; b.textContent=open?'إخفاء ‹':'الكل ›'; b.setAttribute('aria-expanded',String(open)); });
     const q=el.querySelector('[data-dxq]'); if(q){ let t=0; q.oninput=()=>{ clearTimeout(t); t=setTimeout(()=>{ query=q.value.trim(); const pos=q.selectionStart; window.RecsUI&&RecsUI.repaintAll(); const q2=document.querySelector('.rx-body [data-dxq]'); if(q2){ q2.focus(); try{ q2.setSelectionRange(pos,pos); }catch{} } },220); }; }
     el.querySelectorAll('[data-dx]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const d=dx(); d[b.dataset.dx]=+b.dataset.val; LS.set(DX_KEY,JSON.stringify(d)); memo.key=''; if(window.RecsUI){ RecsUI.localRank(); RecsUI.repaintAll(); } toast('حُدّثت التوصيات'); });
+    el.querySelectorAll('[data-dxf]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const f=flt(); if(b.dataset.dxf==='age') f.age=b.dataset.val; else f.conf=!!b.dataset.val; LS.set(F_KEY,JSON.stringify(f)); window.RecsUI&&RecsUI.repaintAll(); });
     const r=el.querySelector('[data-dxreset]'); if(r) r.onclick=e=>{ e.stopPropagation(); imp={}; LS.set(IMP_KEY,'{}'); LS.set(PICK_KEY,'{}'); memo.key=''; if(window.RecsUI){ RecsUI.localRank(); RecsUI.repaintAll(); } toast('مُسح سجل الظهور'); };
   }
   /** مسارات التلفاز: من قائمة العرض المصنّفة فقط (فهرس البطاقة = موقعها فيها). */
   function tvLanes(){ const l=(_recCache.list||[]).filter(c=>!snoozed(c)); if(!l.length) return [];
     const day=stablePick('tvday',todayK(),l,8,2), yng=l.filter(c=>young(c));
-    return [['☀️ اكتشاف اليوم',day],['🌱 اكتشافات 18–21 (موثّقة العمر)',yng],['✅ توصيات مؤكدة',l.filter(confirmed)],['🧪 بيانات محدودة',l.filter(c=>!confirmed(c))]].filter(x=>x[1].length); }
-  return {lanesHtml,wire,seen,verifyAge,young,ranked,confirmed,diversify,tvLanes,ageBadge,_t:{card,impN,snoozed,exactAge,validDate,dx,get imp(){ return imp; }}};
+    const la=lastAdded(), byAdd=la?l.filter(c=>(c.near||[]).includes(la.name)):[];
+    return [['☀️ اكتشاف اليوم',day],...(byAdd.length?[['➕ لأنك أضفت '+la.name,byAdd]]:[]),['🌱 اكتشافات 18–21 (موثّقة العمر)',yng],['✅ توصيات مؤكدة',l.filter(confirmed)],['🧪 بيانات محدودة',l.filter(c=>!confirmed(c))]].filter(x=>x[1].length); }
+  return {lanesHtml,wire,seen,verifyAge,young,ranked,confirmed,diversify,tvLanes,ageBadge,_t:{flt,applyF,lastAdded,card,impN,snoozed,exactAge,validDate,dx,get imp(){ return imp; }}};
 })();

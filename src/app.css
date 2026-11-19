@@ -1134,3 +1134,22 @@ html:not(.tvapp) .wk-sub>*{flex:none}
 html:not(.tvapp) .car{bottom:112px}
 /* الإشعار فوق شريط «تعديل/حذف» في ملف الممثلة بدل أن يغطيه */
 body:has(#ovDetail.show) .toast,body:has(#ovDetail.show) #undoT{bottom:calc(var(--sb) + 92px)}
+/* v36 الاستديو: عنوان «ألبوماتي» بعد الألبومات الذكية */
+.salh{margin:18px 0 10px;font-size:1.05rem}
+/* v36 اكتشف: شريط الفلاتر صف واحد يُسحب أفقيًا */
+.dx-flt{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 12px;padding-bottom:2px}
+.dx-flt::-webkit-scrollbar{display:none}.dx-flt .chip{flex:none}
+/* v36 توحيد ترويسات الصفحات: عنوان الصفحة الكاملة بنفس الحجم والوزن واللون في الأعمال/اكتشف/الإحصائيات/الاستديو،
+   وعناوين الأوراق والحوارات بمقاس أصغر موحّد. العنوان الفرعي بنفس النمط. */
+html:not(.tvapp) :is(.wk-title,.rx-top,.sthead,.shead .sht) h2{font-size:1.45rem;font-weight:800;letter-spacing:.2px;line-height:1.25;color:var(--text);background:none;-webkit-text-fill-color:currentColor}
+html:not(.tvapp) :is(.wk-title,.sthead,.shead .sht) small{display:block;margin-top:2px;color:var(--muted);font-size:.8rem;font-weight:500}
+html:not(.tvapp) :is(.fh,.v17h) h2{font-size:1.15rem;font-weight:800;line-height:1.3}
+html:not(.tvapp) :is(.wk-bar,.rx-top,.shead,.sthead){min-height:48px}
+/* v36 ترويسة المكتبة: على الجوال «⋯» بدل زرّي العرض والتمويه (يبقيان في الحاسوب والتلفاز) */
+#bMoreH{display:none;position:relative}
+#bMoreH.dot::after{content:"";position:absolute;top:7px;inset-inline-end:7px;width:8px;height:8px;border-radius:50%;background:var(--acc)}
+@media (max-width:640px){ html:not(.tv):not(.tvapp) #bMoreH{display:inline-grid} html:not(.tv):not(.tvapp) .ibtns #bShow,html:not(.tv):not(.tvapp) .ibtns #bBlur{display:none} }
+.hmenu{display:grid;gap:8px;margin-top:8px}.hmenu .btn{justify-content:flex-start;min-height:48px}.hmenu .btn .ic{width:20px;height:20px}
+/* v36 الألبومات الذكية: بطاقات أعرض وأقصر (كثيرة العدد) */
+.ssess.smart{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.ssess.smart .ssm{aspect-ratio:16/10}

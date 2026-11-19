@@ -212,6 +212,7 @@ const Studio=(()=>{
     past:()=>list().filter(x=>yearOf(x.pub)).sort((a,b)=>a.pub.localeCompare(b.pub)),
     week:()=>spread(list().filter(x=>Date.now()-x.found<7*864e5).sort((a,b)=>quality(b)-quality(a)),24,4),
     liked:()=>[...IMG.values()].filter(x=>x.like&&!x.wrong).sort((a,b)=>b.like-a.like),
+    since:()=>SINCE?list().filter(x=>x.found>SINCE).sort((a,b)=>b.found-a.found):[],
   };
   function sessions(){ const m=new Map(); list().forEach(x=>{ if(!x.sess) return; const k=x.sess.k; if(!m.has(k)) m.set(k,{k,t:x.sess.t,d:x.sess.d,st:x.sess.st,pid:x.pid,imgs:[]}); m.get(k).imgs.push(x); });
     return [...m.values()].filter(s=>s.imgs.length>=2).sort((a,b)=>(b.d||'').localeCompare(a.d||'')); }
@@ -234,7 +235,7 @@ const Studio=(()=>{
   let view={v:'home'}, stack=[], tab='home';
   const isOpen=()=>$('ovStudio').classList.contains('show');
   function dot(){ const d=$('sDot'); if(d) d.style.display=(+LS.get('vkte_studio_new')||0)>0?'':'none'; }
-  async function open(v){ await load(); LS.set('vkte_studio_new','0'); dot(); if(v){ stack=[]; view=v; } $('ovStudio').classList.add('show'); draw(); root().scrollTop=0;
+  async function open(v){ await load(); markVisit(); LS.set('vkte_studio_new','0'); dot(); if(v){ stack=[]; view=v; } $('ovStudio').classList.add('show'); draw(); root().scrollTop=0;
     if(due()&&!busy) discover(); }
   const go=v=>{ stack.push({view,scroll:root().scrollTop}); view=v; draw(); root().scrollTop=0; };
   const back=()=>{ const p=stack.pop(); if(!p){ view={v:'home'}; draw(); return; } view=p.view; draw(); root().scrollTop=p.scroll; };
@@ -255,6 +256,17 @@ const Studio=(()=>{
   const sec=(t,sub,body,more)=>`<section class="ssec"><div class="ssh"><div><h3>${t}</h3>${sub?`<small>${sub}</small>`:''}</div>${more?`<button type="button" class="slink" data-tab="${more}">الكل ›</button>`:''}</div>${body}</section>`;
   const strip=(arr,key)=>{ lists[key]=arr; return `<div class="sstrip">`+arr.slice(0,20).map(x=>`<button type="button" class="sst" data-si="${x.id}" data-k="${key}" style="${x.col?'background:'+x.col:''}"><img loading="lazy" src="${esc(thumb(x))}" alt="" onload="this.classList.add('ok')" onerror="Studio._err(this,'${x.id}')"><span>${esc(pname(x.pid))}</span></button>`).join('')+'</div>'; };
   const grid=(arr,key,H)=>{ lists[key]=arr; return gridHTML(arr,key,H); };
+  // (v36) «جديد منذ زيارتك»: لحظة آخر زيارة تُثبَّت لجلسة التطبيق كلها (فتح الاستديو مرتين لا يُخفي الجديد)
+  let SINCE=null;
+  const markVisit=()=>{ if(SINCE==null){ SINCE=+LS.get('vkte_studio_visit','0')||0; } LS.set('vkte_studio_visit',String(Date.now())); };
+  // (v36) ألبومات ذكية تُبنى تلقائيًا: حسب الدقة، العقد، النوع، المصدر
+  const SMART=[
+    ['4k','دقة 4K وأعلى',x=>longSide(x)>=3000],['hd','عالية الدقة',x=>longSide(x)>=1500&&longSide(x)<3000],
+    ['d2020','صور العشرينيات',x=>yearOf(x.pub)>=2020],['d2010','صور 2010–2019',x=>{ const y=yearOf(x.pub); return y>=2010&&y<2020; }],['d2000','قبل 2010',x=>{ const y=yearOf(x.pub); return y>0&&y<2010; }],
+    ['k-portrait','بورتريهات',x=>x.kind==='portrait'],['k-still','لقطات جلسات',x=>x.kind==='still'],['k-promo','ترويجية',x=>x.kind==='promo'],['k-archive','أرشيف',x=>x.kind==='archive'],
+    ['s-stash','من StashDB',x=>x.src==='stash'||x.src==='stashs'],['s-tpdb','من ThePornDB',x=>x.src==='tpdb'||x.src==='tpdbs'],['s-wiki','من Wikimedia',x=>x.src==='wiki'],
+    ['unseen','لم ترها بعد',x=>!x.seen]];
+  const smartList=k=>{ const d=SMART.find(a=>a[0]===k); return d?list().filter(d[2]).sort((a,b)=>quality(b)-quality(a)||b.found-a.found):[]; };
   const TABS=[['home','اكتشاف'],['latest','الأحدث'],['rare','النادرة'],['best','الأفضل'],['sess','الجلسات'],['perfs','الممثلات'],['liked','أعجبتني'],['albums','ألبوماتي']];
 
   function statusLine(){ const st=KV.status||{}; if(prog.on) return `<span class="spin"></span> جارٍ البحث: ${esc(prog.name)} (${prog.i}/${prog.n})${prog.added?' · '+prog.added+' جديدة':''} <button type="button" class="slink" data-act="stop">إيقاف</button>`;
@@ -275,6 +287,7 @@ const Studio=(()=>{
     lists.potd=potd?[potd]:[]; lists.gem=gem?[gem]:[];
     let h='';
     if(potd) h+=`<button type="button" class="shero" data-si="${potd.id}" data-k="potd" style="${potd.col?'--c:'+potd.col:''}"><img src="${esc(sized(potd.url,1280)||potd.url)}" alt="" onload="this.classList.add('ok')" onerror="this.onerror=null;this.src='${esc(potd.prev||potd.url)}'"><div class="shc"><small>صورة اليوم</small><b>${esc(pname(potd.pid))}</b><span>${esc(meta(potd))}</span></div></button>`;
+    const nw=SEL.since(); if(nw.length) h+=sec('🆕 جديد منذ زيارتك',nw.length+' صورة جديدة · '+new Set(nw.map(x=>x.pid)).size+' ممثلة',strip(nw,'since'));
     h+=sec('اكتشاف اليوم','مجموعة جديدة كل يوم — بلا تكرار لما رأيته',grid(td,'today'));
     if(gem) h+=sec('جوهرة مخفية','صورة نادرة لم تظهر لك من قبل',`<button type="button" class="sgem" data-si="${gem.id}" data-k="gem"><img loading="lazy" src="${esc(thumb(gem))}" alt="" onload="this.classList.add('ok')"><span>${esc(pname(gem.pid))} · ${esc(KIND[gem.kind]||'')}${gem.pub?' · '+esc(gem.pub.slice(0,4)):''}</span></button>`);
     if(sw) h+=sec('جلسة الأسبوع',esc([sw.t,sw.st,pname(sw.pid),sw.d&&sw.d.slice(0,4)].filter(Boolean).join(' · ')),grid(sw.imgs,'sw',120)+`<button type="button" class="slink" data-sess="${esc(sw.k)}">افتح الجلسة كاملة ›</button>`);
@@ -313,8 +326,11 @@ const Studio=(()=>{
   function drawSess(k){ const s=sessions().find(x=>x.k===k); if(!s) return '<p class="snote">الجلسة غير متاحة.</p>';
     return `<p class="snote">${esc([s.st,s.d,pname(s.pid)].filter(Boolean).join(' · '))} · ${s.imgs.length} صورة</p>`+grid(s.imgs,'sess:'+k,200)+`<button type="button" class="btn" data-perf="${esc(s.pid)}">معرض ${esc(pname(s.pid))}</button>`; }
 
+  function drawSmart(){ const cards=SMART.map(([k,t])=>{ const l=smartList(k); if(!l.length) return ''; lists['sm-'+k]=l;
+      return `<button type="button" class="sses" data-smart="${k}"><div class="ssm">${l.slice(0,3).map(x=>`<img loading="lazy" src="${esc(thumb(x))}" alt="" onload="this.classList.add('ok')">`).join('')}</div><b>${esc(t)}</b><small>${l.length} صورة</small></button>`; }).join('');
+    return cards?`<section class="ssec"><div class="ssh"><div><h3>ألبومات ذكية</h3><small>تتجمع وحدها حسب الدقة والتاريخ والنوع والمصدر</small></div></div><div class="ssess smart">${cards}</div></section>`:''; }
   function drawAlbums(){ const al=KV.albums||[];
-    return `<button type="button" class="btn gold" data-act="newalbum">ألبوم جديد</button><div class="ssess" style="margin-top:12px">`+(al.length?al.map(a=>{ const im=a.ids.map(id=>IMG.get(id)).filter(Boolean);
+    return safe(drawSmart)+`<h3 class="salh">ألبوماتي</h3><button type="button" class="btn gold" data-act="newalbum">ألبوم جديد</button><div class="ssess" style="margin-top:12px">`+(al.length?al.map(a=>{ const im=a.ids.map(id=>IMG.get(id)).filter(Boolean);
       return `<button type="button" class="sses" data-album="${a.id}"><div class="ssm">${im.slice(0,3).map(x=>`<img loading="lazy" src="${esc(thumb(x))}" alt="" onload="this.classList.add('ok')">`).join('')||'<i class="sae">＋</i>'}</div><b>${esc(a.name)}</b><small>${im.length} صورة</small></button>`; }).join(''):'')+'</div>'+(al.length?'':'<p class="snote">أنشئ ألبومًا، ثم أضف إليه الصور من زر ＋ في العارض.</p>'); }
   function drawAlbum(id){ const a=(KV.albums||[]).find(x=>x.id===id); if(!a) return '';
     const im=a.ids.map(x=>IMG.get(x)).filter(x=>x&&!x.wrong);
@@ -349,6 +365,7 @@ const Studio=(()=>{
         (()=>{ const l=SEL[tab]?SEL[tab]():[]; return l.length?grid(l,tab):`<p class="snote">${tab==='liked'?'اضغط ♥ على أي صورة لتظهر هنا.':'لا صور بعد.'}</p>`; })(); back=false; }
     else if(v==='perf'){ title=esc(pname(view.pid)); sub='معرض الممثلة'; body=drawPerf(view.pid,view.sub); }
     else if(v==='sess'){ const s=sessions().find(x=>x.k===view.k); title=esc((s&&s.t)||'جلسة'); sub='جلسة تصوير'; body=drawSess(view.k); }
+    else if(v==='smart'){ const d=SMART.find(a=>a[0]===view.k); title=esc(d?d[1]:'ألبوم ذكي'); sub='ألبوم ذكي'; const l=smartList(view.k); body=l.length?grid(l,'sm-'+view.k):'<p class="snote">لا صور هنا بعد.</p>'; }
     else if(v==='album'){ const a=(KV.albums||[]).find(x=>x.id===view.id); title=esc(a?a.name:'ألبوم'); sub='ألبوم'; body=drawAlbum(view.id); }
     else if(v==='list'){ title=esc(view.t); sub=view.sub||''; body=grid(view.l(),'list'); }
     else if(v==='settings'){ title='إعدادات الاستديو'; sub=''; body=drawSettings(); }
@@ -409,6 +426,7 @@ const Studio=(()=>{
     const ps=t.closest('[data-psub]'); if(ps){ view={...view,sub:ps.dataset.psub}; draw(); return; }
     const pr=t.closest('[data-psrc]'); if(pr){ view={...view,src:view.src===pr.dataset.psrc?'':pr.dataset.psrc}; draw(); return; }
     const ss=t.closest('[data-sess]'); if(ss){ go({v:'sess',k:ss.dataset.sess}); return; }
+    const sm=t.closest('[data-smart]'); if(sm){ go({v:'smart',k:sm.dataset.smart}); return; }
     const al=t.closest('[data-album]'); if(al){ go({v:'album',id:al.dataset.album}); return; }
     const od=t.closest('[data-od]'); if(od){ openDetail(od.dataset.od); return; }
     const a=t.closest('[data-act]'); if(!a) return; const k=a.dataset.act;
@@ -463,5 +481,5 @@ const Studio=(()=>{
   function retarget(from,to){ const go=()=>{ const ch=[]; IMG.forEach(x=>{ if(from.includes(x.pid)){ x.pid=to; ch.push(x); } }); from.forEach(id=>{ delete KV.perfAt[id]; }); return putImgs(ch).then(()=>saveKV('perfAt')); };
     return loaded?go():load().then(go); }
   return {retarget,open:v=>open(v).then(()=>{ if(document.documentElement.classList.contains('tvapp')) focusFirst(); }),tvBack,move,discover,isOpen,_err:(img,id)=>{ const x=IMG.get(id); if(x&&img.src!==x.url&&x.prev){ img.src=x.url; return; } img.closest('button')&&img.closest('button').classList.add('bad'); },
-    _test:{sized,thumb,IMG,load,SEL,sessions,dedupe,ham,justify,quality,rarity,versions,similar,get S(){ return S; },get KV(){ return KV; }}};
+    _test:{SMART,smartList,get SINCE(){ return SINCE; },set SINCE(v){ SINCE=v; },sized,thumb,IMG,load,SEL,sessions,dedupe,ham,justify,quality,rarity,versions,similar,get S(){ return S; },get KV(){ return KV; }}};
 })();

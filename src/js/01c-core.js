@@ -129,9 +129,13 @@ function _scaled(im,max){ let w=im.width||im.naturalWidth, h=im.height||im.natur
   const mk=(a,b)=>{ const c=document.createElement('canvas'); c.width=a; c.height=b; const x=c.getContext('2d'); x.imageSmoothingEnabled=true; x.imageSmoothingQuality='high'; return [c,x]; };
   while(cw/2>tw&&ch/2>th){ const [c,x]=mk(Math.round(cw/2),Math.round(ch/2)); x.drawImage(cur,0,0,c.width,c.height); cur=c; cw=c.width; ch=c.height; }
   const [c,x]=mk(tw,th); x.fillStyle='#000'; x.drawImage(cur,0,0,tw,th); return c; }
-const _enc=(c,q)=>c.toDataURL(IMGTYPE,q);
-async function resize(file){ const im=await _decode(file); try{ return _enc(_scaled(im,IMGQ.full),IMGQ.fullQ); } finally{ if(im.close) im.close(); } }
-async function mkThumb(src,max=IMGQ.thumb){ const im=await _decode(src); try{ return _enc(_scaled(im,max),IMGQ.thumbQ); } finally{ if(im.close) im.close(); } }
+// (v36) الترميز عبر toBlob (خارج الخيط الرئيسي في المتصفحات الحديثة) ثم قراءته data URL — نفس الصيغة المخزّنة تمامًا.
+// أي فشل يرجع إلى toDataURL المتزامن كما كان.
+const _enc=(c,q)=>new Promise((res,rej)=>{ const sync=()=>{ try{ res(c.toDataURL(IMGTYPE,q)); }catch(e){ rej(e); } };   // الفشل يُرمى كما كان
+  if(!c.toBlob) return sync();
+  try{ c.toBlob(b=>{ if(!b||!b.size) return sync(); const r=new FileReader(); r.onload=()=>typeof r.result==='string'&&r.result.startsWith('data:image/')?res(r.result):sync(); r.onerror=sync; r.readAsDataURL(b); },IMGTYPE,q); }catch{ sync(); } });
+async function resize(file){ const im=await _decode(file); try{ return await _enc(_scaled(im,IMGQ.full),IMGQ.fullQ); } finally{ if(im.close) im.close(); } }
+async function mkThumb(src,max=IMGQ.thumb){ const im=await _decode(src); try{ return await _enc(_scaled(im,max),IMGQ.thumbQ); } finally{ if(im.close) im.close(); } }
 
 // v28: تُنشأ المصغّرات الناقصة بأولوية الظاهر أولًا، وتُحدَّث البطاقة في مكانها بدل إعادة بناء الشبكة (لا قفز ولا فقدان تركيز)
 // (v35) انتظار لحظة خمول حقيقية بين الصور (لا ينافس التمرير أو فتح الصفحات على الجوال/التلفاز)

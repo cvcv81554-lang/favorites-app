@@ -17,7 +17,8 @@ const Gallery=(()=>{
     cnt.textContent=list.length>1?(idx+1)+' / '+list.length:''; cap.textContent=capOf(list[idx]); cap.hidden=!capOf(list[idx]);
     if(act){ act.hidden=!opt0.bar; act.innerHTML=opt0.bar?opt0.bar(list[idx],idx):''; }
     if(opt0.onShow) try{ opt0.onShow(list[idx],idx); }catch{}
-    const nxt=list[(idx+1)%list.length]; if(nxt&&list.length>1){ const p=new Image(); p.src=srcOf(nxt); }
+    const nxt=list[(idx+1)%list.length]; if(nxt&&list.length>1){ const p=new Image(); p.decoding='async'; p.src=srcOf(nxt); }
+    const prv=list[(idx-1+list.length)%list.length]; if(prv&&list.length>2){ const p=new Image(); p.decoding='async'; p.src=srcOf(prv); }   // (v36) السحب للخلف فوري أيضًا
     schedule(); }
   function schedule(){ clearTimeout(timer); bar.style.transition='none'; bar.style.width='0';
     if(!playing||list.length<2) return; requestAnimationFrame(()=>requestAnimationFrame(()=>{ bar.style.transition='width '+DELAY+'ms linear'; bar.style.width='100%'; }));

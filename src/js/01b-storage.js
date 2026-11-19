@@ -108,7 +108,10 @@ let lists=[]; try{ lists=JSON.parse(LS.get('vkte_lists','[]'))||[]; }catch{ list
 const metaChanged=()=>HOOKS.meta.forEach(f=>{ try{ f(); }catch{} });
 const saveLists=()=>{ LS.set('vkte_lists',JSON.stringify(lists)); metaChanged(); };
 let _wCache=null;
+// (v36) فهرس الأعمال لا يُلغى إلا إذا تغيّرت أعمال سجل محفوظ فعلًا (كان يُلغى مع كل حفظ، حتى عداد الزيارات)
+const _wSig=new WeakMap(); let _wRef=null, _wN=-1;
+const wSigOf=x=>{ try{ return (x.added||0)+'|'+JSON.stringify(x.works||[]); }catch{ return Math.random()+''; } };
 // نقطة الحفظ الوحيدة: تمرّ عليها بوابة +18 قبل الكتابة
-const save=(...a)=>{ _wCache=null; let arr=a.flat().filter(Boolean);
+const save=(...a)=>{ let arr=a.flat().filter(Boolean); if(arr.some(x=>!_wSig.has(x)||_wSig.get(x)!==wSigOf(x))) _wCache=null;
   const bad=arr.filter(minorRec); if(bad.length){ arr=arr.filter(x=>!bad.includes(x)); items=items.filter(x=>!bad.includes(x)); toast('رُفض حفظ سجل عمره أقل من 18 سنة'); }
   return DB.put(arr).then(()=>{ HOOKS.saved.forEach(f=>{ try{ f(arr); }catch{} }); return true; }).catch(e=>{ console.warn('save',e); toast('تعذّر الحفظ. ربما المساحة ممتلئة'); return false; }); };

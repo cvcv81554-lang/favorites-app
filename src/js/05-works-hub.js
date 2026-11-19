@@ -44,8 +44,9 @@ const wPic=(it,seed='')=>{
 };
 
 function wAll(){
-  if(_wCache) return _wCache;
+  if(_wCache&&_wRef===items&&_wN===items.length) return _wCache;   // حذف/استبدال القائمة يعيد البناء
   const map=new Map();
+  items.forEach(it=>_wSig.set(it,wSigOf(it))); _wRef=items; _wN=items.length;
   items.forEach(it=>(it.works||[]).forEach((w,idx)=>{
     const key=wKeyOf(w);
     let g=map.get(key);

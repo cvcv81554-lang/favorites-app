@@ -16,7 +16,12 @@ function loadOne(im,src,fallback){ return new Promise(res=>{ let tries=0;
 function fixCar(){ const car=document.getElementById('car'); if(!car||car.dataset.v29) return; car.dataset.v29='1';
   try{ const it=items.find(x=>x.id===curDetail), list=(it&&it.photos)||[]; const imgs=[...car.querySelectorAll('img')];
     imgs.forEach((im,n)=>{ im.loading='eager'; im.dataset.src=list[n]||im.getAttribute('src')||''; if(n>0) im.removeAttribute('src'); });
-    (async()=>{ for(let n=0;n<imgs.length;n++){ if(!imgs[n].isConnected) return; await loadOne(imgs[n],imgs[n].dataset.src,n===0&&it?thumbSrc(it.thumb):''); await new Promise(r=>setTimeout(r,60)); } })();
+    // v35: الحالية + التاليتان فقط، والباقي عند الاقتراب منها بالتمرير (كان يفك ترميز حتى 30 صورة كاملة عند كل فتح)
+    const done=new Set(); let q=Promise.resolve();
+    const want=n=>{ if(n<0||n>=imgs.length||done.has(n)) return; done.add(n); q=q.then(async()=>{ if(!imgs[n].isConnected) return; await loadOne(imgs[n],imgs[n].dataset.src,n===0&&it?thumbSrc(it.thumb):''); await new Promise(r=>setTimeout(r,60)); }); };
+    [0,1,2].forEach(want);
+    const near=()=>{ const cr=car.getBoundingClientRect(), cx=cr.left+cr.width/2; let best=0,bd=1e9; imgs.forEach((im,n)=>{ const r=im.getBoundingClientRect(), d=Math.abs(r.left+r.width/2-cx); if(d<bd){ bd=d; best=n; } }); for(let k=best-1;k<=best+2;k++) want(k); };
+    let st=0; car.addEventListener('scroll',()=>{ clearTimeout(st); st=setTimeout(near,90); },{passive:true});
   }catch(e){ lerr('car',e); } }
 const md=document.getElementById('mDetail'); if(md) new MutationObserver(()=>fixCar()).observe(md,{childList:true});
 })();

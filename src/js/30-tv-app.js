@@ -534,7 +534,7 @@ const TVApp=(()=>{
   window.addEventListener('keydown',onKey,true);
   window.addEventListener('keyup',e=>{ if(repeating){ repeating=false; if(root) root.classList.remove('fast'); }
     if(e.key==='Enter'&&lpEl){ clearTimeout(lpT); const el=lpEl; lpEl=null; if(!lpFired&&document.activeElement===el) el.click(); lpFired=false; } },true);
-  function applyPrefs(){ document.documentElement.style.setProperty('--tvs',LS.get('vkte_tvs','1')); if(root) root.classList.toggle('noanim',LS.get('vkte_tv_anim','1')==='0'); }
+  function applyPrefs(){ document.documentElement.style.setProperty('--tvs',LS.get('vkte_tvs','1')); if(root) root.classList.toggle('noanim',LS.get('vkte_tv_anim','1')==='0'); if(typeof Motion!=='undefined') Motion.syncNoMotion(); }
 
   // ---------------- التحديث الحي ----------------
   let rt=0;

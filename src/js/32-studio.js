@@ -38,7 +38,10 @@ const Studio=(()=>{
   const yearOf=d=>{ const m=String(d||'').match(/^(\d{4})/); return m?+m[1]:0; };
   const px=x=>(x.w||0)*(x.h||0);
   const longSide=x=>Math.max(x.w||0,x.h||0);
-  const perf=pid=>items.find(i=>i.id===pid);
+  // خريطة id→ممثلة تُبنى مرة وتُحدَّث عند تغيّر المكتبة (كان بحثًا خطيًا لكل صورة: صور×ممثلات في كل رسم)
+  let PM=null, PMsrc=null, PMn=-1;
+  const perf=pid=>{ if(!PM||PMsrc!==items||PMn!==items.length){ PM=new Map(items.map(i=>[i.id,i])); PMsrc=items; PMn=items.length; } return PM.get(pid); };
+  HOOKS.saved.push(()=>{ PM=null; }); HOOKS.deleted.push(()=>{ PM=null; });
   const pname=pid=>{ const p=perf(pid); return p?p.name:'—'; };
   const SRC={tpdb:'ThePornDB',tpdbs:'ThePornDB · مشهد',stash:'StashDB',stashs:'StashDB · مشهد',wiki:'Wikimedia'};
   const KIND={portrait:'بورتريه',promo:'ترويجية',still:'لقطة جلسة',archive:'أرشيف'};
@@ -51,10 +54,13 @@ const Studio=(()=>{
   function quality(x){ const p=px(x); let q=p?Math.min(100,Math.log2(p/1e5+1)*18):(x.src==='stash'||x.src==='wiki'?40:30);
     if(x.w&&x.h&&Math.min(x.w,x.h)<500) q-=25; return Math.round(q); }
   function rarity(x){ let r=0; if(!x.dups) r+=25; if(x.kind==='archive') r+=30; else if(x.kind==='still') r+=12;
-    const y=yearOf(x.pub); if(y) r+=Math.min(30,Math.max(0,(new Date().getFullYear()-y)*3)); if(!x.seen) r+=20;
+    const y=yearOf(x.pub); if(y) r+=Math.min(30,Math.max(0,(NOWY-y)*3)); if(!x.seen) r+=20;
     r+={wiki:20,stashs:10,tpdbs:6,stash:4,tpdb:0}[x.src]||0; return r; }
   const visible=x=>!x.hide&&!x.wrong&&!x.dupOf&&!(KV.hiddenSrc||{})[x.src]&&perf(x.pid)&&!(S.minPx&&x.w&&longSide(x)<S.minPx);
-  const list=()=>[...IMG.values()].filter(visible);
+  // أثناء الرسم الواحد تُحسب القائمة مرة واحدة (كانت تُحسب 12+ مرة)؛ تُرجَع نسخة لأن SEL ترتّب في مكانها
+  let NOWY=new Date().getFullYear(), _Lon=false, _L=null;
+  const list=()=>{ if(_Lon){ if(!_L) _L=[...IMG.values()].filter(visible); return _L.slice(); } return [...IMG.values()].filter(visible); };
+  const byScore=(l,f)=>l.map(x=>[x,f(x)]).sort((a,b)=>b[1]-a[1]).map(a=>a[0]);
 
   // ---------- المصادر ----------
   let reqs=0, budget=0;
@@ -196,8 +202,8 @@ const Studio=(()=>{
     gem:()=>daily('gem',r=>fresh(list()).filter(x=>!x.seen).sort((a,b)=>rarity(b)+r()*15-(rarity(a)+r()*15)).slice(0,1)),
     latest:()=>list().sort((a,b)=>(b.pub||'').localeCompare(a.pub||'')||b.found-a.found),
     added:()=>list().sort((a,b)=>b.found-a.found),
-    rare:()=>list().sort((a,b)=>rarity(b)-rarity(a)),
-    best:()=>list().sort((a,b)=>quality(b)+(b.like?15:0)-(quality(a)+(a.like?15:0))),
+    rare:()=>byScore(list(),rarity),
+    best:()=>byScore(list(),x=>quality(x)+(x.like?15:0)),
     hq:()=>list().filter(x=>px(x)).sort((a,b)=>px(b)-px(a)),
     past:()=>list().filter(x=>yearOf(x.pub)).sort((a,b)=>a.pub.localeCompare(b.pub)),
     week:()=>spread(list().filter(x=>Date.now()-x.found<7*864e5).sort((a,b)=>quality(b)-quality(a)),24,4),
@@ -276,7 +282,7 @@ const Studio=(()=>{
     h+=sec('الصور النادرة','قليلة الانتشار، قديمة، أو لم ترها',strip(SEL.rare(),'rare'),'rare');
     return h; }
 
-  const safe=f=>{ try{ return f(); }catch(e){ console.warn('studio',e); return '<p class="snote">تعذّر عرض هذا القسم.</p>'; } };
+  const safe=f=>{ try{ return f(); }catch(e){ console.warn('studio',e); return '<p class="snote">تعذّر عرض هذا القسم. <button type="button" class="slink" data-act="redraw">إعادة المحاولة</button></p>'; } };
   function meta(x){ return [SRC[x.src],KIND[x.kind],x.w?'⁦'+x.w+'×'+x.h+'⁩':'',x.pub?x.pub.slice(0,4):''].filter(Boolean).join(' · '); }
 
   function drawPerfs(){ const c={}; list().forEach(x=>(c[x.pid]=c[x.pid]||[]).push(x));
@@ -315,6 +321,8 @@ const Studio=(()=>{
     return `<div class="sset">
       <h4>الحالة</h4><p>${statusLine()}${st.reqs?' · '+st.reqs+' طلبًا في آخر تحديث':''}</p>
       <h4>وتيرة البحث التلقائي</h4>${opt('freq',S.freq,[['manual','يدويًا فقط'],['12h','كل 12 ساعة'],['day','يوميًا'],['week','أسبوعيًا']])}
+      <h4>التحديث التلقائي (الاستديو واكتشف)</h4><select class="in" data-bg>${[['wifi','على Wi‑Fi فقط ويحترم توفير البطارية'],['any','أي اتصال'],['off','متوقف (يدوي فقط)']].map(([v,t])=>`<option value="${v}" ${(typeof Sched!=='undefined'?Sched.mode():'wifi')===v?'selected':''}>${t}</option>`).join('')}</select>
+      <p class="snote">يعمل عند فتح التطبيق والعودة إليه. ${typeof Sched!=='undefined'?esc(Sched.limits()):''}</p>
       <h4>المصادر</h4>${sw('tpdb','ThePornDB — صور الممثلة')}${sw('tpdbs','ThePornDB — صور المشاهد')}${sw('stash','StashDB — صور الممثلة')}${sw('stashs','StashDB — صور المشاهد')}${sw('wiki','Wikimedia Commons — أرشيف')}
       <p class="snote">${LS.get('vkte_key')?'':'⚠ لا مفتاح ThePornDB. '}${LS.get('vkte_stash')?'':'⚠ لا مفتاح StashDB. '}المفاتيح من إعدادات التطبيق.</p>
       <h4>أقل جودة مقبولة</h4>${opt('minPx',S.minPx,[[0,'كل الصور'],[800,'800 بكسل فأكثر'],[1500,'1500 بكسل فأكثر'],[2500,'2500 بكسل فأكثر']])}
@@ -326,7 +334,8 @@ const Studio=(()=>{
       ${Object.keys(KV.hiddenSrc||{}).length?`<p class="snote">مصادر مخفية: ${Object.keys(KV.hiddenSrc).map(k=>SRC[k]).join('، ')} <button type="button" class="slink" data-act="unhidesrc">إظهارها</button></p>`:''}
     </div>`; }
 
-  function draw(){ const m=root(); if(!m) return; lists={};
+  function draw(){ NOWY=new Date().getFullYear(); _Lon=true; _L=null; try{ return draw0.apply(this,arguments); } finally{ _Lon=false; _L=null; } }
+  function draw0(){ const m=root(); if(!m) return; lists={};
     let title='الاستديو', sub=`${list().length} صورة · ${new Set(list().map(x=>x.pid)).size} ممثلة`, body='', back=stack.length>0||view.v!=='home';
     const v=view.v;
     if(v==='home'){ body=`<div class="stabs">`+TABS.map(([k,t])=>`<button type="button" class="chip ${tab===k?'on':''}" data-tab="${k}">${t}</button>`).join('')+'</div>';
@@ -387,6 +396,7 @@ const Studio=(()=>{
   // ---------- النقرات ----------
   function onClick(e){ const t=e.target;
     const si=t.closest('[data-si]'); if(si){ const key=si.dataset.k||(si.closest('[data-key]')&&si.closest('[data-key]').dataset.key); const l=lists[key]||[IMG.get(si.dataset.si)]; view_(l,Math.max(0,l.findIndex(x=>x&&x.id===si.dataset.si))); return; }
+    if(t.closest('[data-act="redraw"]')){ const sc=root().scrollTop; draw(); root().scrollTop=sc; return; }
     const tb=t.closest('[data-tab]'); if(tb){ tab=tb.dataset.tab; stack=[]; view={v:'home'}; draw(); root().scrollTop=0; return; }
     const mo=t.closest('[data-more]'); if(mo){ const k=mo.dataset.more; LIM[k]=(LIM[k]||(k==='sess'?40:60))+90; const s=root().scrollTop; draw(); root().scrollTop=s; return; }
     const pf=t.closest('[data-perf]'); if(pf){ go({v:'perf',pid:pf.dataset.perf}); return; }
@@ -409,7 +419,8 @@ const Studio=(()=>{
     else if(k==='clear') askConfirm('مسح فهرس الصور؟ سيُعاد البحث لاحقًا. المعجَبات وصور الألبومات تبقى.','مسح',true).then(async y=>{ if(!y) return; const drop=[...IMG.values()].filter(x=>!x.like&&!(x.albums||[]).length).map(x=>x.id); drop.forEach(id=>IMG.delete(id)); await delImgs(drop); KV.perfAt={}; await saveKV('perfAt'); draw(); }); }
   function onChange(e){ const t=e.target;
     if(t.dataset.set){ const k=t.dataset.set, v=t.value; S[k]=/^\d+$/.test(v)?+v:v; kvSet('settings',S).then(()=>toast('حُفظ'),()=>toast('تعذّر حفظ الإعداد')); }
-    if(t.dataset.src){ S.src[t.dataset.src]=t.checked?1:0; kvSet('settings',S); } }
+    if(t.dataset.src){ S.src[t.dataset.src]=t.checked?1:0; kvSet('settings',S); }
+    if(t.hasAttribute('data-bg')&&typeof Sched!=='undefined'){ Sched.setMode(t.value); toast('حُفظ'); } }
 
   // ---------- الربط مع التطبيق ----------
   function init(){ const m=root(); if(!m) return; m.addEventListener('click',onClick); m.addEventListener('change',onChange);
@@ -417,10 +428,17 @@ const Studio=(()=>{
     window.addEventListener('resize',()=>{ if(isOpen()){ clearTimeout(init.rt); init.rt=setTimeout(()=>{ const t=root().scrollTop; draw(); root().scrollTop=t; },200); } });
     dot();
     // تحديث تلقائي: بعد بدء التشغيل بهدوء، وعند العودة للتطبيق
-    const auto=()=>{ load().then(()=>{ if(due()&&!busy&&!document.hidden) discover(); }).catch(()=>{}); };
+    // فحص خفيف (مفتاحان صغيران) قبل تحميل فهرس الصور كله إلى الذاكرة
+    const lightDue=async()=>{ if(loaded) return due(); const st=(await kvGet('settings'))||{}; const ms={'12h':432e5,day:864e5,week:6048e5}[st.freq||DEF.freq]||0; if(!ms) return false; const s=(await kvGet('status'))||{}; return Date.now()-(s.last||0)>ms; };
+    const auto=()=>{ lightDue().then(async d=>{ if(d&&!document.hidden&&(typeof Sched==='undefined'||await Sched.ok('studio'))) return load().then(()=>{ if(due()&&!busy&&!document.hidden) discover(); }); }).catch(()=>{}); };
     setTimeout(auto,25000); document.addEventListener('visibilitychange',()=>{ if(!document.hidden) setTimeout(auto,8000); });
     // ممثلة جديدة في المفضلة → تُدرج فورًا في البحث
-    let st=0; HOOKS.saved.push(arr=>{ if(!loaded||!S||S.freq==='manual') return; if((arr||[]).some(it=>it&&!KV.perfAt[it.id]&&linked(it))){ clearTimeout(st); st=setTimeout(()=>{ if(!busy) discover(); },9000); } });
+    // (v35) لا يشترط أن يكون الفهرس محمّلًا: يقرأ مفتاحين صغيرين أولًا، ويحمّل الفهرس فقط لممثلة لم يُبحث لها قط
+    let st=0; HOOKS.saved.push(arr=>{ const cand=(arr||[]).filter(it=>it&&it.id&&!minorRec(it)); if(!cand.length) return;
+      if(loaded&&(!S||S.freq==='manual'||!cand.some(it=>!KV.perfAt[it.id]&&linked(it)))) return;
+      clearTimeout(st); st=setTimeout(async()=>{ try{
+        if(!loaded){ const s=(await kvGet('settings'))||{}; if((s.freq||DEF.freq)==='manual') return; const pa=(await kvGet('perfAt'))||{}; if(!cand.some(it=>!pa[it.id])) return; await load(); }
+        if(!busy&&S.freq!=='manual'&&cand.some(it=>!KV.perfAt[it.id]&&linked(it))) discover(); }catch(e){ console.warn('studio new',e); } },9000); });
     // ممثلة حُذفت → صورها تُحذف حسب الإعداد (المعجَبات وصور الألبومات تبقى دائمًا)
     HOOKS.deleted.push(async id=>{ await load(); if(S.keepOnRemove) return; const drop=[...IMG.values()].filter(x=>x.pid===id&&!x.like&&!(x.albums||[]).length).map(x=>x.id); drop.forEach(k=>IMG.delete(k)); delete KV.perfAt[id]; await delImgs(drop); await saveKV('perfAt'); }); }
   setTimeout(init,0);

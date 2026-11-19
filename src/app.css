@@ -735,8 +735,8 @@ html[data-theme=amoled] .tv-shade{background:linear-gradient(270deg,#000 16%,rgb
 .tv-ni{position:relative;display:flex;align-items:center;flex:0 1 2.8rem;min-height:2.1rem;margin-bottom:.2rem;padding:0 .95rem;border-radius:1rem;white-space:nowrap;color:#a99db9;font-size:1rem}
 .tv-ni .ic{margin-left:1rem;flex:none}
 .tv-ni span{font-weight:600;visibility:hidden}.tv-nav:focus-within .tv-ni span{visibility:visible}
-#tv .tv-ni.cur{color:#f0b59a}
-.tv-ni.cur::after{content:"";position:absolute;right:-.55rem;top:50%;margin-top:-.75rem;width:.22rem;height:1.5rem;border-radius:1rem;background:#f0b59a}
+#tv .tv-ni.cur{color:var(--tv-acc2)}
+.tv-ni.cur::after{content:"";position:absolute;right:-.55rem;top:50%;margin-top:-.75rem;width:.22rem;height:1.5rem;border-radius:1rem;background:var(--tv-acc2)}
 #tv .tv-ni:focus{background:#f3edf8;color:#15101f}
 .tv-ver{flex:none;margin-top:auto;padding-top:.3rem;padding:0 .35rem;font-size:.75rem;color:#a99db9;white-space:nowrap;text-align:center}
 .tv-nav:focus-within .tv-ver{text-align:right}
@@ -752,10 +752,10 @@ html[data-theme=amoled] .tv-shade{background:linear-gradient(270deg,#000 16%,rgb
 /* الرئيسية */
 .tv-hero{position:absolute;top:0;right:0;left:0;height:39vh;padding:1.6rem 3rem 0 30vw;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none}
 .tv-hero h1{margin:.2rem 0;font-size:2.8rem;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.hk{color:#f0b59a;font-weight:800;font-size:.95rem;min-height:1.2em}
+.hk{color:var(--tv-acc2);font-weight:800;font-size:.95rem;min-height:1.2em}
 .tv-rows{top:40vh}.tv-hero .pp-n{-webkit-line-clamp:2}
-.pp-r{display:flex;align-items:center;font-size:1.1rem;margin:.2rem 0}.pp-r .stars{font-size:1.25rem;margin-left:.6rem}.pp-r b{color:#f0b59a}
-.pp-m{color:#d9d1e3;font-size:1.05rem;margin:.2rem 0}.pp-m b{color:#f0b59a}
+.pp-r{display:flex;align-items:center;font-size:1.1rem;margin:.2rem 0}.pp-r .stars{font-size:1.25rem;margin-left:.6rem}.pp-r b{color:var(--tv-acc2)}
+.pp-m{color:#d9d1e3;font-size:1.05rem;margin:.2rem 0}.pp-m b{color:var(--tv-acc2)}
 .pp-n{color:#a99db9;font-size:.98rem;line-height:1.6;margin:.3rem 0 0;max-width:42rem;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .pp-c{display:flex;flex-wrap:wrap;margin-top:.3rem}.pc{font-size:.85rem;font-weight:700;padding:.2rem .8rem;margin:0 0 .4rem .5rem;border-radius:2rem;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14)}
 .pc[class*=" t"]{background:var(--tc);color:#1d1220;border:0}
@@ -774,14 +774,14 @@ html[data-theme=amoled] .tv-shade{background:linear-gradient(270deg,#000 16%,rgb
 .tvc .ph>img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%}
 .tvc .ph>i{font-style:normal;font-size:2.4rem;color:#9a6b5c}
 .tvc .ph em{position:absolute;bottom:.45rem;right:.45rem;font-style:normal;font-size:.8rem;font-weight:800;padding:.1rem .55rem;border-radius:1rem;background:rgba(12,8,20,.8);color:#ffd9c4;z-index:2}
-.tvc .ph em.up{background:#d98f6c;color:#2a130c}
+.tvc .ph em.up{background:var(--tv-acc);color:#2a130c}
 .tvc .ph u{position:absolute;top:.4rem;left:.5rem;text-decoration:none;color:#ffcf9f;font-size:1rem;z-index:2}
 .tvc .ph u.ok{width:1.6rem;height:1.6rem;border-radius:50%;background:#7fcfa5;color:#06231a;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:900}
 .tvc .ph s{position:absolute;top:.4rem;right:.45rem;text-decoration:none;font-weight:900;font-size:.85rem;padding:.05rem .55rem;border-radius:.5rem;background:var(--tc);color:#1d1220;z-index:2}
 .tvc b{font-size:.98rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:.35rem .15rem 0}
 .tvc small{font-size:.8rem;color:#a99db9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:.1rem .15rem 0}
 .tvc:focus .ph{transform:scale(1.07);box-shadow:0 0 0 .22rem var(--tvf)}
-.tvc:focus b{color:#f0b59a}
+.tvc:focus b{color:var(--tv-acc2)}
 .tvw,.tv-hs.wide .tvc{width:15rem}.tvw .ph{height:9.4rem}
 .tvw .wcv,.tvw .wcv img,.tvw .wcv-ph,.wl-ph .wcv,.wl-ph .wcv img{top:0;right:0;bottom:0;left:0}
 .tvw.seen .ph .wcv{opacity:.55}
@@ -795,11 +795,11 @@ html[data-theme=amoled] .tv-shade{background:linear-gradient(270deg,#000 16%,rgb
 .tb{display:inline-flex;align-items:center;justify-content:center;height:3rem;padding:0 1.5rem;border-radius:2rem;background:rgba(255,255,255,.1);border:.12rem solid rgba(255,255,255,.08);font-size:1.02rem;font-weight:700;white-space:nowrap;color:#f3edf8}
 .tb small{font-weight:500;opacity:.7;font-size:.85rem;margin-right:.4rem}
 #tv .tb.chip{height:2.6rem;padding:0 1.2rem;font-size:.95rem}#tv .tb.sm{height:2.3rem;font-size:.85rem}
-#tv .tb.on{background:rgba(217,143,108,.28);border-color:rgba(217,143,108,.6);color:#f0b59a}
-#tv .tb.pri{background:linear-gradient(135deg,#f0b59a,#d98f6c 45%,#d8788f);color:#2a130c;border-color:transparent}
+#tv .tb.on{background:rgba(217,143,108,.28);border-color:rgba(217,143,108,.6);color:var(--tv-acc2)}
+#tv .tb.pri{background:linear-gradient(135deg,var(--tv-acc2),var(--tv-acc) 45%,#d8788f);color:#2a130c;border-color:transparent}
 #tv .tb:focus{background:#f3edf8;color:#15101f;border-color:#f3edf8;transform:scale(1.06)}
 .tv-acts{display:flex;flex-wrap:wrap;margin-top:1rem}.tv-acts>.tb{margin:0 0 .6rem .8rem}
-#tv .tv-acts.tv-stars .tb{width:3.2rem;padding:0;font-size:1.6rem;color:rgba(243,237,248,.35)}#tv .tv-acts.tv-stars .tb.on{color:#f0b59a}#tv .tv-acts.tv-stars .tb:focus{color:#15101f}
+#tv .tv-acts.tv-stars .tb{width:3.2rem;padding:0;font-size:1.6rem;color:rgba(243,237,248,.35)}#tv .tv-acts.tv-stars .tb.on{color:var(--tv-acc2)}#tv .tv-acts.tv-stars .tb:focus{color:#15101f}
 #tv .tv-acts.tv-stars.tvbig .tb{width:4.2rem;height:4.2rem;font-size:2.3rem}
 #tv .tb.tier{min-width:3.4rem;background:var(--tc);color:#1d1220;border-color:transparent;opacity:.6}#tv .tb.tier.on{opacity:1;border-color:#f3edf8}
 .tv-in{width:46rem;max-width:100%;height:3.4rem;padding:0 1.4rem;border-radius:2rem;background:rgba(255,255,255,.08);border:.15rem solid rgba(255,255,255,.12);color:#f3edf8;font-size:1.15rem;font-family:inherit}
@@ -807,7 +807,7 @@ html[data-theme=amoled] .tv-shade{background:linear-gradient(270deg,#000 16%,rgb
 /* صفحة الممثلة */
 .pp-head{display:flex;align-items:flex-end;min-height:60vh;padding:1.2rem 3rem 1rem}
 .pp-ph{flex:none;height:56vh;min-width:30vh;max-width:46vh;margin-left:2.4rem;border-radius:1.2rem;overflow:hidden;background:#2e2443;display:flex;align-items:center;justify-content:center}
-.pp-ph img{height:100%;width:auto;max-width:46vh;object-fit:contain;display:block}.pp-ph i{font-style:normal;font-size:4rem;color:#f0b59a}
+.pp-ph img{height:100%;width:auto;max-width:46vh;object-fit:contain;display:block}.pp-ph i{font-style:normal;font-size:4rem;color:var(--tv-acc2)}
 .pp-info{flex:1;min-width:0;display:flex;flex-direction:column}
 .pp-info h1{margin:0;font-size:3rem;line-height:1.1}.pp-al{color:#a99db9;margin:.3rem 0 0;font-size:.95rem}
 /* النافذة */
@@ -816,7 +816,7 @@ html[data-theme=amoled] .tv-shade{background:linear-gradient(270deg,#000 16%,rgb
 .tv-panel{width:62rem;max-width:86vw;max-height:86vh;overflow:hidden;background:#1b1529;border:1px solid rgba(255,255,255,.16);border-radius:1.6rem;padding:2rem 2.2rem;position:relative}
 .tv-panel h2{margin:0 0 .4rem;font-size:1.8rem;line-height:1.25}.tv-panel h3{margin:1.2rem 0 .2rem;font-size:1.05rem;color:#a99db9}
 .wl{display:flex}.wl-ph{flex:none;width:22rem;height:13.75rem;margin-left:2rem;border-radius:1rem;overflow:hidden;position:relative;background:#2e2443;display:flex;align-items:center;justify-content:center}
-.wl-ph.tall{width:15rem;height:20rem}.wl-ph>img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain}.wl-ph i{font-style:normal;font-size:3rem;color:#f0b59a}
+.wl-ph.tall{width:15rem;height:20rem}.wl-ph>img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain}.wl-ph i{font-style:normal;font-size:3rem;color:var(--tv-acc2)}
 .wl-b{flex:1;min-width:0;display:flex;flex-direction:column}
 .wl .tv-acts{margin-top:.8rem}
 /* حالات */
@@ -832,7 +832,7 @@ html[data-theme=amoled] .tv-shade{background:linear-gradient(270deg,#000 16%,rgb
 .sy-qr svg{width:100%;height:100%}.sy-qr i{font-style:normal;font-size:4rem}
 .sy-info{flex:1;min-width:0;display:flex;flex-direction:column}
 .sy-info ol{margin:0 0 .6rem;padding-right:1.4rem;font-size:1.1rem;line-height:1.9}
-.sy-kv{display:flex;align-items:baseline;font-size:1.1rem;margin-bottom:.4rem}.sy-kv span{color:#a99db9;width:5rem}.sy-kv b{font-size:2rem;letter-spacing:.05em}.sy-kv b.code{color:#f0b59a;letter-spacing:.25em}
+.sy-kv{display:flex;align-items:baseline;font-size:1.1rem;margin-bottom:.4rem}.sy-kv span{color:#a99db9;width:5rem}.sy-kv b{font-size:2rem;letter-spacing:.05em}.sy-kv b.code{color:var(--tv-acc2);letter-spacing:.25em}
 .sy-err{color:#ee7386;font-size:1.05rem;margin:0 0 .6rem}
 /* أشياء من الواجهة العامة تظهر فوق الشاشة */
 html.tvapp .toast{bottom:2rem;font-size:1.05rem;padding:.8rem 1.6rem}
@@ -845,17 +845,17 @@ html.tvapp #ovAsk .modal{font-size:1.05rem}
 html[data-theme=amoled] .tv-info{background:#000}
 #tv[data-info] .tv-info{display:flex}#tv[data-info] .tv-main{bottom:5rem}
 .tv-info .tvib{flex:1;min-width:0;display:flex;align-items:center;white-space:nowrap;overflow:hidden}
-.tv-info .tvib>b{font-size:1.25rem;margin-left:1rem;overflow:hidden;text-overflow:ellipsis;max-width:22rem}.tv-info .tvib>span{color:#d9d1e3;font-size:.95rem;margin-left:1rem}.tv-info .tvib>span.ir{color:#f0b59a;font-weight:800}
-.tv-info .pc{margin:0 0 0 .4rem;flex:none}.tv-info .ip{font-style:normal;color:#f0b59a;font-weight:800;margin-right:1rem;font-size:.95rem;white-space:nowrap}.tv-info .ih{color:#7f7493;font-size:.8rem;margin-right:1.2rem;white-space:nowrap}
+.tv-info .tvib>b{font-size:1.25rem;margin-left:1rem;overflow:hidden;text-overflow:ellipsis;max-width:22rem}.tv-info .tvib>span{color:#d9d1e3;font-size:.95rem;margin-left:1rem}.tv-info .tvib>span.ir{color:var(--tv-acc2);font-weight:800}
+.tv-info .pc{margin:0 0 0 .4rem;flex:none}.tv-info .ip{font-style:normal;color:var(--tv-acc2);font-weight:800;margin-right:1rem;font-size:.95rem;white-space:nowrap}.tv-info .ih{color:#7f7493;font-size:.8rem;margin-right:1.2rem;white-space:nowrap}
 /* نوافذ الاختيار (قوائم منسدلة بالريموت) */
 .tv-panel.scr{height:80vh;padding:0}.tv-panel.scr>.tv-scroll{top:0;right:0;bottom:0;left:0}.tv-panel.scr .tv-vt{padding:2rem 2.2rem}.tv-pad2{height:2rem}
 .tv-opts{display:flex;flex-wrap:wrap;margin-top:1rem}
 #tv .tb.opt{margin:0 0 .7rem .7rem;height:3rem;padding:0 1.4rem}
-.qk{display:flex}.qk-ph{flex:none;width:11rem;height:16.5rem;margin-left:2rem;border-radius:1rem;overflow:hidden;background:#2e2443;position:relative;display:flex;align-items:center;justify-content:center}.qk-ph img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%}.qk-ph i{font-style:normal;font-size:3rem;color:#f0b59a}
-.hl p{font-size:1.1rem;line-height:1.8;margin:.3rem 0;color:#d9d1e3}.hl b{color:#f0b59a}
+.qk{display:flex}.qk-ph{flex:none;width:11rem;height:16.5rem;margin-left:2rem;border-radius:1rem;overflow:hidden;background:#2e2443;position:relative;display:flex;align-items:center;justify-content:center}.qk-ph img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%}.qk-ph i{font-style:normal;font-size:3rem;color:var(--tv-acc2)}
+.hl p{font-size:1.1rem;line-height:1.8;margin:.3rem 0;color:#d9d1e3}.hl b{color:var(--tv-acc2)}
 .wl-who{margin:1rem -2.2rem 0}#tv .wl-who h3{padding:0 2.2rem;margin:0}.wl-who .tv-tr{padding:.8rem 2.2rem .4rem}.wl-who .tvc{width:6.4rem}.wl-who .tvc .ph{height:9.6rem}
 .pp-n.why{-webkit-line-clamp:6;color:#d9d1e3}
-.tvc .ph em.tvmt{background:#f0b59a;color:#2a130c}
+.tvc .ph em.tvmt{background:var(--tv-acc2);color:#2a130c}
 /* البحث: لوحة مفاتيح على الشاشة */
 .tvsr .tv-ph{padding-bottom:.6rem}
 .sr-wrap{position:absolute;top:6.4rem;right:0;bottom:0;left:0;display:flex}
@@ -872,7 +872,7 @@ html[data-theme=amoled] .tv-info{background:#000}
 /* وضع الاستكشاف */
 .ex-stage{display:flex;align-items:flex-end;min-height:72vh;padding:1rem 3rem 1rem}
 .ex-ph{position:relative;flex:none;height:66vh;min-width:36vh;max-width:56vh;margin-left:2.6rem;border-radius:1.4rem;overflow:hidden;background:#2e2443;display:flex;align-items:center;justify-content:center;border:0;padding:0}
-.ex-ph img{height:100%;width:auto;max-width:56vh;object-fit:contain;display:block}.ex-ph>i{font-style:normal;font-size:5rem;color:#f0b59a}
+.ex-ph img{height:100%;width:auto;max-width:56vh;object-fit:contain;display:block}.ex-ph>i{font-style:normal;font-size:5rem;color:var(--tv-acc2)}
 #tv .ex-ph:focus{box-shadow:0 0 0 .25rem #fff}
 .ex-nav{position:absolute;top:50%;right:0;left:0;margin-top:-1.6rem;display:none;justify-content:space-between;padding:0 .6rem;pointer-events:none}
 .ex-ph:focus .ex-nav{display:flex}.ex-nav b{width:3.2rem;height:3.2rem;border-radius:50%;background:rgba(12,8,20,.75);display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff}
@@ -881,25 +881,25 @@ html[data-theme=amoled] .tv-info{background:#000}
 /* المقارنة */
 .cm-top{display:flex;align-items:flex-start;padding:0 3rem}
 .cm-c{flex:none;width:13rem;display:flex;flex-direction:column;align-items:center;text-align:center}
-.cm-c img{width:12rem;height:17rem;object-fit:cover;object-position:50% 18%;border-radius:1rem;background:#2e2443}.cm-c>i{width:12rem;height:17rem;border-radius:1rem;background:#2e2443;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:3rem;color:#f0b59a}
+.cm-c img{width:12rem;height:17rem;object-fit:cover;object-position:50% 18%;border-radius:1rem;background:#2e2443}.cm-c>i{width:12rem;height:17rem;border-radius:1rem;background:#2e2443;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:3rem;color:var(--tv-acc2)}
 .cm-c h2{margin:.6rem 0 .5rem;font-size:1.5rem}
 .cm-t{flex:1;min-width:0;padding:0 1.6rem}
 .cm-l{display:flex;align-items:center;height:2.15rem;border-bottom:1px solid rgba(255,255,255,.06);font-size:1.02rem}
-.cm-l b{flex:none;width:8rem;text-align:center;color:#a99db9;font-weight:600;font-size:.92rem}.cm-l span{flex:1;min-width:0;text-align:center;color:#d9d1e3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cm-l span.win{color:#f0b59a;font-weight:800}
+.cm-l b{flex:none;width:8rem;text-align:center;color:#a99db9;font-weight:600;font-size:.92rem}.cm-l span{flex:1;min-width:0;text-align:center;color:#d9d1e3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cm-l span.win{color:var(--tv-acc2);font-weight:800}
 .cm-sd{display:flex;padding:1.4rem 3rem 0}.cm-box{flex:1;margin-left:1.2rem;padding:1rem 1.4rem;border-radius:1.2rem;background:rgba(255,255,255,.05);border:.12rem solid rgba(255,255,255,.07);color:#f3edf8}
-.cm-box h3{margin:0 0 .4rem;font-size:1.15rem;color:#f0b59a}.cm-box p{margin:.2rem 0;font-size:1rem;line-height:1.6;color:#d9d1e3}
+.cm-box h3{margin:0 0 .4rem;font-size:1.15rem;color:var(--tv-acc2)}.cm-box p{margin:.2rem 0;font-size:1rem;line-height:1.6;color:#d9d1e3}
 #tv .cm-box:focus,#tv .me-box:focus{border-color:#f3edf8}
 .cm-a{padding:0 3rem}
 /* ملفي */
 .me-row{display:flex;flex-wrap:wrap;padding:0 3rem .4rem}
 .me-s{width:9.6rem;height:6rem;margin:0 0 1rem 1rem;border-radius:1.2rem;background:rgba(255,255,255,.06);border:.12rem solid rgba(255,255,255,.07);color:#f3edf8;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0}
-.me-s b{font-size:2rem;color:#f0b59a}.me-s span{font-size:.9rem;color:#a99db9}
+.me-s b{font-size:2rem;color:var(--tv-acc2)}.me-s span{font-size:.9rem;color:#a99db9}
 #tv .me-s:focus{background:#f3edf8;transform:scale(1.06)}#tv .me-s:focus span,#tv .me-s:focus b{color:#15101f}
 .me-box{width:21.5rem;margin:0 0 1rem 1rem;padding:1rem 1.3rem;border-radius:1.2rem;background:rgba(255,255,255,.05);border:.12rem solid rgba(255,255,255,.07)}
-.me-box.wide{width:66.5rem;max-width:100%}.me-box h3{margin:0 0 .5rem;font-size:1.1rem;color:#f0b59a}
+.me-box.wide{width:66.5rem;max-width:100%}.me-box h3{margin:0 0 .5rem;font-size:1.1rem;color:var(--tv-acc2)}
 .me-t{margin:.2rem 0;font-size:1.1rem;line-height:1.7;color:#d9d1e3}.me-t b{color:#f3edf8}
 .me-b{display:flex;align-items:center;height:1.9rem;font-size:.92rem}.me-b span{width:7rem;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#d9d1e3}
-.me-b i{flex:1;height:.55rem;border-radius:1rem;background:rgba(255,255,255,.08);overflow:hidden;margin:0 .6rem;display:flex}.me-b u{display:block;height:100%;background:linear-gradient(90deg,#d8788f,#f0b59a);border-radius:1rem}
+.me-b i{flex:1;height:.55rem;border-radius:1rem;background:rgba(255,255,255,.08);overflow:hidden;margin:0 .6rem;display:flex}.me-b u{display:block;height:100%;background:linear-gradient(90deg,#d8788f,var(--tv-acc2));border-radius:1rem}
 .me-b b{width:2.4rem;text-align:left;color:#a99db9;font-weight:700}
 #tv[data-page="explore"] .tv-bg img.on{opacity:.3}
 #tv[data-page="cmp"] .tv-bg,#tv[data-page="me"] .tv-bg,#tv[data-page="lists"] .tv-bg{display:none}
@@ -1063,3 +1063,60 @@ html.tvapp .tv-gh{margin:28px 0 12px;font-size:1.2rem;color:var(--muted)}
 .dx-pc,.dx-seg button,.dx-all{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .dx-seg button:focus-visible,.dx-all:focus-visible{outline:2px solid var(--acc2);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){ .dx-pc:hover .dx-ph{transform:none} .dx-strip{scroll-behavior:auto} }
+
+/* ===================== v35: رموز التصميم والحركة ===================== */
+:root{--sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;--sp-6:32px;
+  --r-xs:8px;--r-sm:12px;--r-md:16px;--r-xl:24px;--r-pill:999px;
+  --dur-1:120ms;--dur-2:200ms;--dur-3:300ms;--dur-4:420ms;
+  --ease-out:var(--ease);--ease-in:cubic-bezier(.4,0,1,1);--ease-spring:cubic-bezier(.34,1.45,.64,1)}
+/* التلفاز يتبع لون التمييز المختار (كان ثابتًا نحاسيًا) */
+#tv{--tv-acc:var(--acc);--tv-acc2:var(--acc2)}
+[data-theme=light] #tv{--tv-acc2:var(--acc)}
+/* دخول وخروج الطبقات (الخروج كان فوريًا). المتصفحات الأقدم تبقى على السلوك السابق */
+/* الصفحات الكاملة: دخول خفيف بلا خروج (قياس: حركة الخروج كلّفت ~50ms لكل تنقل لأن الصفحة المغلقة تبقى مرسومة مع التمويه) */
+html:not(.tvapp) .overlay.page.show .modal{animation:pgin var(--dur-3) var(--ease-out)}
+@keyframes pgin{from{opacity:0;transform:translateX(18px)}}
+[dir=ltr] .overlay.page.show .modal{animation-name:pgin-l}@keyframes pgin-l{from{opacity:0;transform:translateX(-18px)}}
+/* الأوراق والحوارات: دخول وخروج (كان الخروج فوريًا). المتصفحات الأقدم تبقى على السلوك السابق */
+@supports (transition-behavior:allow-discrete){
+  html:not(.tvapp) .overlay:not(.page):not(.full){opacity:0;transition:opacity var(--dur-2) var(--ease-in),display var(--dur-2) allow-discrete}
+  html:not(.tvapp) .overlay:not(.page):not(.full).show{opacity:1;animation:none;transition-timing-function:var(--ease-out)}
+  html:not(.tvapp) .overlay:not(.page):not(.full):not(.show){pointer-events:none}
+  @starting-style{html:not(.tvapp) .overlay:not(.page):not(.full).show{opacity:0}}
+  html:not(.tvapp) .overlay:not(.page):not(.full) .modal{animation:none;transition:transform var(--dur-3) var(--ease-out)}
+  html:not(.tvapp) .overlay:not(.page):not(.full):not(.show) .modal{transform:translateY(28px);transition:transform var(--dur-2) var(--ease-in)}
+  @starting-style{html:not(.tvapp) .overlay:not(.page):not(.full).show .modal{transform:translateY(60px)}}
+}
+/* تغذية راجعة للرقائق والتبويبات */
+.chip,.wc,.wk-tab,.dx-seg button,.v17b{transition:background var(--dur-2),border-color var(--dur-2),color var(--dur-2),transform var(--dur-1) var(--ease-out)}
+.chip:active,.wc:active,.wk-tab:active,.dx-seg button:active,.v17b:active{transform:scale(.95)}
+.chip.on{animation:pop var(--dur-2) var(--ease-spring)}
+@keyframes pop{50%{transform:scale(1.05)}}
+/* ظهور متتالٍ محدود: لا تتأخر البطاقة 60 ثانيتين */
+.grid.intro .card{animation-duration:var(--dur-4);animation-delay:calc(min(var(--i,0),10) * 30ms)}
+.dx-strip .dx-pc{animation:rise var(--dur-4) var(--ease-out) both;animation-delay:calc(min(var(--i,0),8) * 35ms)}
+/* عارض الصور: خلفية تتلاشى بينما الصورة تتكبّر من مكانها (35-motion.js) */
+#lbx .lstage{transform-origin:center;will-change:auto}
+/* هيكل تحميل لملصقات «اكتشف» حتى تصل الصورة */
+.dx-ph.ld{background:linear-gradient(100deg,var(--card) 30%,var(--card2) 50%,var(--card) 70%);background-size:200% 100%;animation:sk 1.3s linear infinite}
+@keyframes sk{to{background-position:-200% 0}}
+.dx-ph .ini{position:absolute;inset:0;display:grid;place-items:center;font-size:1.6rem;font-weight:800;color:color-mix(in srgb,var(--acc2) 70%,transparent);background:linear-gradient(160deg,color-mix(in srgb,var(--acc) 18%,var(--card)),var(--card))}
+/* حالة بلا اتصال في الصفحات التي تعرض محتوى مخزّنًا */
+.offnote{display:flex;align-items:center;gap:8px;margin:6px 0 10px;padding:8px 12px;border-radius:var(--r-sm);background:color-mix(in srgb,var(--danger,#e05) 10%,var(--card));border:1px solid var(--line);color:var(--muted);font-size:.8rem}
+.offnote::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--danger,#e05);flex:none}
+/* التلفاز: الإشعار أعلى الشاشة كي لا يغطي الرف المركّز */
+html.tvapp .toast{top:2rem;bottom:auto}
+/* إكمال «تقليل الحركة» + خيار «بلا حركة» في التلفاز يطبَّق على الواجهة كلها */
+@media (prefers-reduced-motion:reduce){#tv{--tvt:0s}#lbx.playing .lstage img.on,.sorb,.dx-ph.ld{animation:none}.shero img,.car img{transform:none}html .overlay .modal{transform:none!important}}
+html.nomotion *,html.nomotion *::before,html.nomotion *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+.dx-ph.ld .ini{opacity:0}
+html.offline #mStudio::before,html.offline #mRecs::before{content:"بدون اتصال · يُعرض آخر محتوى محفوظ، والتحديث يُستأنف عند عودة الشبكة";display:flex;margin:0 0 10px;padding:8px 12px;border-radius:var(--r-sm);background:color-mix(in srgb,var(--danger,#e05) 12%,var(--card));border:1px solid var(--line);color:var(--muted);font-size:.8rem}
+/* v35 أداء: لا تمويه خلفية داخل كل بطاقة (مئات طبقات التركيب أثناء التمرير) — خلفية أعتم بدلًا منه */
+.card span.rt,.card .favbtn,span.rt,.favbtn,.dx-m{-webkit-backdrop-filter:none;backdrop-filter:none}
+span.rt{background:rgba(12,8,20,.66)}
+.favbtn{background:rgba(12,8,20,.58)}
+/* v35 التلفاز: تركيز الاستديو بنفس لغة بطاقات الشاشة (حلقة بيضاء + تكبير) بدل إطار مختلف */
+html.tvapp #mStudio{padding:1.4rem 3rem 2rem}
+html.tvapp #mStudio :is(.sj,.sst,.sgem,.spf,.sses):focus{outline:none;box-shadow:0 0 0 .22rem #fff,0 .6rem 1.6rem rgba(0,0,0,.6);transform:scale(1.05);z-index:2}
+html.tvapp #mStudio .shero{max-height:min(56vh,620px)}
+html.tv .chip.tvf{border-radius:var(--r-pill)}html.tv .ib.tvf{border-radius:var(--r-sm)}

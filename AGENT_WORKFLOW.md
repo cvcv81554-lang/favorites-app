@@ -15,6 +15,42 @@
 
 > بعد أي تثبيت جديد: `/reload-plugins` أو جلسة جديدة كي تظهر المهارات.
 
+## أدوات التصميم والحركة (المرحلة 2 — 2026-11-19)
+
+| الأداة | القرار | السبب |
+|---|---|---|
+| **Motion Design Skill** (LottieFiles) | ✅ مثبّتة (`~/.claude/skills/motion-design`) | مبادئ توقيت وتخفيف وتتابع (مستقلة عن المكتبة)؛ لا تضيف شيئًا للتطبيق |
+| **Motion AI Kit** (`npx motion-ai`) | ⏳ يحتاج تشغيلًا تفاعليًا من المستخدم | مثبّته تفاعلي فقط؛ يضيف مهارات وخادم توثيق لمكتبة Motion (غير مستخدمة في التطبيق) |
+| **GSAP** | ❌ لم تُضف للتطبيق | Web Animations API + CSS تكفي لكل الحركات المطلوبة بلا وزن إضافي ولا استهلاك بطارية |
+| **Three.js / Theatre.js / VFX-JS / Three Quarks** | ❌ مرفوضة | مكتبات ثلاثية الأبعاد/تأثيرات ثقيلة (مئات KB) بلا فائدة حقيقية لتطبيق مكتبة وصور، وتستهلك البطارية |
+| **React Postprocessing** | ❌ غير متوافقة | تتطلب React، والتطبيق JavaScript بلا إطار |
+
+**قاعدة الحركة في Favorites:**
+- CSS transitions/animations أو Web Animations API فقط، على `transform` و`opacity`.
+- مدة 150–320ms، و`prefers-reduced-motion` يلغيها.
+- لا حركات مستمرة في الخلفية.
+
+## الوكلاء وأدوارهم
+
+| الدور | الوكيل/المهارة المتاحة فعلًا | ملاحظة |
+|---|---|---|
+| تحليل المشروع واكتشاف المشكلات | `feature-dev:code-explorer`، `Explore` | قراءة فقط |
+| UI/UX والتصميم | المهارات: `ui-ux-pro-max`، `frontend-design`، `web-design-guidelines` | لا يوجد وكيل تصميم مستقل؛ الجلسة الرئيسية تطبّقها |
+| الحركة والانتقالات | مهارة `motion-design` | مبادئ؛ التنفيذ CSS/WAAPI |
+| الأداء والسرعة | `agent-skills:web-performance-auditor` + مهارة `performance-optimization` + قياسات `tests/perf.mjs` | |
+| تطوير الميزات | `feature-dev:code-architect` (تصميم)، ثم الجلسة الرئيسية (تنفيذ) | |
+| الاستديو والتحديث في الخلفية | `feature-dev:code-explorer` للخريطة + الجلسة الرئيسية | |
+| الاكتشاف والتوصيات | `feature-dev:code-explorer` + الجلسة الرئيسية | |
+| الاختبارات والجودة | `agent-skills:test-engineer`، `pr-review-toolkit:pr-test-analyzer` | |
+| الأمان والاستقرار | `agent-skills:security-auditor`، `pr-review-toolkit:silent-failure-hunter`، خطّاف `security-guidance` | |
+| المراجعة النهائية | `pr-review-toolkit:code-reviewer` أو `agent-skills:code-reviewer` | على الفرق كاملًا قبل الدفع |
+
+**التشغيل المتوازي بلا تعارض:**
+- الوكلاء الفرعيون يُطلقون **معًا للقراءة والتحليل والمراجعة فقط**.
+- **التعديل على الملفات تقوم به الجلسة الرئيسية وحدها**. هي تدمج نتائج الوكلاء بعد التحقق منها في الكود، فلا يعدّل وكيلان الملف نفسه.
+- إن لزم تعديل متوازٍ حقيقي: `isolation: "worktree"` لكل وكيل، ثم دمج يدوي.
+- **نتائج الوكلاء تُعامل كفرضيات:** كل ادعاء يُتحقق منه في الكود قبل إصلاحه، ويُختبر بعد الإصلاح.
+
 ## سير العمل (لكل مهمة)
 
 ### 1) التخطيط والتحليل — Superpowers (+ Addy)

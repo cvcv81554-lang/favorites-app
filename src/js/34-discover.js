@@ -57,15 +57,20 @@ const Discover=(()=>{
   { const _re=recEligible; recEligible=function(c){ if(!_re.apply(this,arguments)) return false; if(anySourceMinor(c)) return false; return !snoozed(c); }; }
   { const _er=recExploreRate; recExploreRate=function(){ return Math.min(0.5,_er.apply(this,arguments)*[0.5,1,1.6][dx().expl]); }; }
   { const _pw=perfWeight; perfWeight=function(it){ let w=_pw.apply(this,arguments);
-      const rec=jget('vkte_recent',[]), i=rec.indexOf(it&&it.id); if(i>=0) w+=0.45*(1-i/14);          // تصفحتها مؤخرًا
+      const rec=recentL(), i=rec.indexOf(it&&it.id); if(i>=0) w+=0.45*(1-i/14);          // تصفحتها مؤخرًا
       const nl=((it&&it.lists)||[]).length; if(nl) w+=Math.min(0.24,0.12*nl);                         // في قوائمك
       return Math.max(-1.8,Math.min(4,w)); }; }
-  const ageBand=c=>{ const a=candAge(c); return a==null?'':a<25?'a':a<30?'b':a<36?'c':'d'; };
+  // قراءة «تصفحتها مؤخرًا» تُفك مرة لكل تغيّر (كانت JSON.parse لكل ممثلة في كل تقييم)
+  let _rcRaw=null, _rc=[]; const recentL=()=>{ const r=LS.get('vkte_recent',''); if(r!==_rcRaw){ _rcRaw=r; try{ _rc=JSON.parse(r||'[]')||[]; }catch{ _rc=[]; } if(!Array.isArray(_rc)) _rc=[]; } return _rc; };
+  let AB=null;   // ذاكرة شريحة العمر أثناء دورة تنويع واحدة
+  const ageBand=c=>{ if(AB&&AB.has(c)) return AB.get(c); const b=ageBand0(c); if(AB) AB.set(c,b); return b; };
+  const ageBand0=c=>{ const a=candAge(c); return a==null?'':a<25?'a':a<30?'b':a<36?'c':'d'; };
   const simA=(a,b)=>{ const x=a.at||{}, y=b.at||{}; return (a.cc&&a.cc===b.cc?0.4:0)+(x.e&&x.e===y.e?0.3:0)+(x.hr&&x.hr===y.hr?0.2:0)+(ageBand(a)&&ageBand(a)===ageBand(b)?0.1:0); };
+  const DIV_TOP=120;
   /** إعادة ترتيب تُنوّع (تبقي الأنسب أولًا، وتؤخر المتشابهات المتتالية). */
-  function diversify(l){ const lam=[0.03,0.08,0.15][dx().div], out=[], left=l.slice();
+  function diversify(l){ if(l.length>DIV_TOP) return diversify(l.slice(0,DIV_TOP)).concat(l.slice(DIV_TOP)); AB=new Map(); const lam=[0.03,0.08,0.15][dx().div], out=[], left=l.slice();
     while(left.length){ let bi=0,bv=-9; left.forEach((c,i)=>{ const pen=out.slice(-5).reduce((s,o)=>s+simA(c,o),0); const v=(c.raw||0)-lam*pen; if(v>bv){ bv=v; bi=i; } }); out.push(left.splice(bi,1)[0]); }
-    return out; }
+    AB=null; return out; }
   { const _rr=recRank; recRank=function(P){ (_recPool.list||[]).forEach(c=>{ const n=impN(c.k||norm(c.name)); if(n) c.shown=Math.max(c.shown||0,Math.min(4,Math.ceil(n/2))); });
       memo.key=''; return diversify(_rr.apply(this,arguments)); }; }
 
@@ -94,8 +99,9 @@ const Discover=(()=>{
 
   // ================= 5) العرض =================
   // بطاقة ملصق مدمجة للمسارات (الضغط يفتح ورقة التفاصيل نفسها: إضافة / حفظ / ليست ذوقي)
+  const ini=n=>String(n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?';
   const card=c=>{ const k=kOf(c), a=candAge(c), m=c.matchPct||recClamp(Math.round(40+(c.raw||0)*60),40,98), why=(c.reasons||[])[0]||'';
-    return `<button type="button" class="dx-pc" data-act="open" data-k="${esc(k)}"><span class="dx-ph">${c.img?`<img src="${esc(c.img)}" width="300" height="400" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" onerror="this.remove()">`:'<i aria-hidden="true">♡</i>'}<em class="dx-m">${m}٪</em>${c.explore?'<em class="dx-x">استكشاف</em>':''}</span>
+    return `<button type="button" class="dx-pc" data-act="open" data-k="${esc(k)}"><span class="dx-ph${c.img?' ld':''}"><span class="ini" aria-hidden="true">${esc(ini(c.name))}</span>${c.img?`<img src="${esc(c.img)}" width="300" height="400" referrerpolicy="no-referrer" loading="lazy" decoding="async" alt="" onload="this.parentNode.classList.remove('ld')" onerror="this.parentNode.classList.remove('ld');this.remove()">`:''}<em class="dx-m">${m}٪</em>${c.explore?'<em class="dx-x">استكشاف</em>':''}</span>
       <b>${esc(c.name)}</b><small>${esc([(flagOf(c.cc)+' '+(c.cc?ctryName(c.cc):(c.country||''))).trim(),a?a+' سنة':''].filter(Boolean).join(' · '))}</small>${why?`<i class="dx-why">${esc(why)}</i>`:''}</button>`; };
   function ageBadge(c,v){ v=v||young(c); return v?`<div class="dx-age" title="محسوب من تاريخ الميلاد ${esc(v.date)}">✓ ${v.age} سنة · ${v.srcs.map(s=>SRC_N[s]).join(' و')}${v.srcs.length>1?' (مصدران متطابقان)':''}</div>`:''; }
   const laneLists={};   // الشبكة الكاملة تُبنى عند «الكل» فقط (لا آلاف العناصر المخفية في الصفحة)
@@ -153,5 +159,5 @@ const Discover=(()=>{
   function tvLanes(){ const l=(_recCache.list||[]).filter(c=>!snoozed(c)); if(!l.length) return [];
     const day=stablePick('tvday',todayK(),l,8,2), yng=l.filter(c=>young(c));
     return [['☀️ اكتشاف اليوم',day],['🌱 اكتشافات 18–21 (موثّقة العمر)',yng],['✅ توصيات مؤكدة',l.filter(confirmed)],['🧪 بيانات محدودة',l.filter(c=>!confirmed(c))]].filter(x=>x[1].length); }
-  return {lanesHtml,wire,seen,verifyAge,young,ranked,confirmed,diversify,tvLanes,ageBadge,_t:{impN,snoozed,exactAge,validDate,dx,get imp(){ return imp; }}};
+  return {lanesHtml,wire,seen,verifyAge,young,ranked,confirmed,diversify,tvLanes,ageBadge,_t:{card,impN,snoozed,exactAge,validDate,dx,get imp(){ return imp; }}};
 })();

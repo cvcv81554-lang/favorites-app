@@ -310,7 +310,7 @@
   window.recsOnChange = function () { repaintAll(); if ($$('ovStats').classList.contains('show') && statsTab === 'overview') drawStatsModal(); };
   window.openRecs = openRecs;
   // للوحدة 34-discover: نفس البطاقة والإجراءات (الأزرار داخل .rx تعمل عبر نفس المعالج)
-  window.RecsUI = { cardHtml, kOf, repaintAll, localRank, get RS() { return RS; } };
+  window.RecsUI = { cardHtml, kOf, repaintAll, localRank, refresh, hasKeys, get busy() { return recsLoading; }, get RS() { return RS; } };
   window.recsRerank = () => { try { localRank(); } catch (e) { console.warn('rerank', e); } repaintAll(); };
   addEventListener('pagehide', flushPend);
   document.addEventListener('visibilitychange', () => { if (document.hidden) flushPend(); });

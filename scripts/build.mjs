@@ -25,5 +25,6 @@ const v = createHash('sha1').update(js + css).digest('hex').slice(0, 8);
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const ver = process.env.APP_VERSION || pkg.version;
 writeFileSync(join(out, 'index.html'), readFileSync(join(src, 'index.html'), 'utf8').replaceAll('__V__', v).replaceAll('__VERSION__', ver));
+if (existsSync(join(src, 'runners'))) cpSync(join(src, 'runners'), join(out, 'runners'), { recursive: true });   // مشغّل الخلفية (Background Runner)
 if (existsSync(join(root, 'resources', 'icon.png'))) cpSync(join(root, 'resources', 'icon.png'), join(out, 'icon.png'));
 console.log(`built www/ (${units.length} units, ${(js.length / 1024).toFixed(0)} KB → ${(appJs.length / 1024).toFixed(0)} KB, v${ver}-${v})`);

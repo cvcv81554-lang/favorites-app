@@ -65,4 +65,16 @@ edit(join(app, 'build.gradle'), s => s
   .replace(/versionCode\s+\d+/, 'versionCode((System.getenv("VERSION_CODE") ?: "1") as Integer)')
   .replace(/versionName\s+"[^"]*"/, 'versionName(System.getenv("VERSION_NAME") ?: "1.0.0")'));
 need(/VERSION_CODE/.test(readFileSync(join(app, 'build.gradle'), 'utf8')), 'app/build.gradle');
+// Background Runner: محرك JS (aar) يُحل من node_modules (ما يفعله postinstall الخاص بالإضافة، لأن android/ يُولَّد بعد npm ci)
+edit(join(app, 'build.gradle'), s => s.includes('background-runner/android/src/main/libs') ? s : s.replace("dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'", "dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+        dirs '../../node_modules/@capacitor/background-runner/android/src/main/libs', 'libs'"));
+need(readFileSync(join(app, 'build.gradle'), 'utf8').includes('background-runner/android/src/main/libs'), 'app/build.gradle (background-runner flatDir)');
+// الإضافة تطلب صلاحيات الموقع ولا نستخدمها: تُزال من التطبيق النهائي
+edit(mf, s => { if (s.includes('ACCESS_FINE_LOCATION" tools:node="remove"')) return s;
+  if (!s.includes('xmlns:tools=')) s = s.replace(/<manifest/, '<manifest xmlns:tools="http://schemas.android.com/tools"');
+  return s.replace(/(<manifest[^>]*>)/, `$1
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" tools:node="remove" />`); });
+need(readFileSync(mf, 'utf8').includes('ACCESS_BACKGROUND_LOCATION" tools:node="remove"'), 'AndroidManifest.xml (location removed)');
 console.log('android patched (' + pkg + ')');

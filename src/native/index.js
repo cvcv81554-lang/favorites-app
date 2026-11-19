@@ -4,6 +4,7 @@ import { App } from '@capacitor/app';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import qrcode from 'qrcode-generator';
+import { BackgroundRunner } from '@capacitor/background-runner';
 
 // إضافة محلية صغيرة (أندرويد فقط): كشف التلفاز، FLAG_SECURE، وخادم المزامنة المحلي على الشاشة
 const Shell = registerPlugin('Shell');
@@ -11,7 +12,7 @@ const Shell = registerPlugin('Shell');
 window.Native = {
   isNative: Capacitor.isNativePlatform(),
   platform: Capacitor.getPlatform(),
-  Capacitor, CapacitorHttp, App, Filesystem, Directory, Encoding, Share, Shell
+  Capacitor, CapacitorHttp, App, Filesystem, Directory, Encoding, Share, Shell, BackgroundRunner
 };
 
 // رمز QR كـ SVG (للربط بين الجوال والشاشة)

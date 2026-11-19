@@ -4,8 +4,23 @@
   "webDir": "www",
   "backgroundColor": "#15101f",
   "plugins": {
-    "CapacitorHttp": { "enabled": true }
+    "CapacitorHttp": {
+      "enabled": true
+    },
+    "BackgroundRunner": {
+      "label": "com.favlib.app.check",
+      "src": "runners/background.js",
+      "event": "checkNew",
+      "repeat": true,
+      "interval": 720,
+      "autoStart": true
+    }
   },
-  "android": { "backgroundColor": "#15101f" },
-  "ios": { "backgroundColor": "#15101f", "contentInset": "never" }
+  "android": {
+    "backgroundColor": "#15101f"
+  },
+  "ios": {
+    "backgroundColor": "#15101f",
+    "contentInset": "never"
+  }
 }

@@ -7,13 +7,14 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "serve": "node scripts/serve.mjs",
-    "test": "node tests/run.mjs && node tests/native.mjs && node tests/tv.mjs && node tests/studio.mjs && node tests/hardening.mjs && node tests/plus.mjs && node tests/discover.mjs && node tests/v35.mjs && node tests/v36.mjs",
+    "test": "node tests/run.mjs && node tests/native.mjs && node tests/tv.mjs && node tests/studio.mjs && node tests/hardening.mjs && node tests/plus.mjs && node tests/discover.mjs && node tests/v35.mjs && node tests/v36.mjs && node tests/bgbeta.mjs",
     "android:prepare": "npm run build && (npx cap add android || true) && node scripts/patch-android.mjs && npx cap sync android",
     "ios:prepare": "npm run build && (npx cap add ios || true) && node scripts/patch-ios.mjs && npx cap sync ios"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.0",
     "@capacitor/app": "^7.0.0",
+    "@capacitor/background-runner": "2.3.1",
     "@capacitor/core": "^7.4.0",
     "@capacitor/filesystem": "^7.0.0",
     "@capacitor/ios": "^7.4.0",

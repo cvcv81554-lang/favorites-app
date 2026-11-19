@@ -345,6 +345,7 @@ const Studio=(()=>{
       <h4>وتيرة البحث التلقائي</h4>${opt('freq',S.freq,[['manual','يدويًا فقط'],['12h','كل 12 ساعة'],['day','يوميًا'],['week','أسبوعيًا']])}
       <h4>التحديث التلقائي (الاستديو واكتشف)</h4><select class="in" data-bg>${[['wifi','على Wi‑Fi فقط ويحترم توفير البطارية'],['any','أي اتصال'],['off','متوقف (يدوي فقط)']].map(([v,t])=>`<option value="${v}" ${(typeof Sched!=='undefined'?Sched.mode():'wifi')===v?'selected':''}>${t}</option>`).join('')}</select>
       <p class="snote">يعمل عند فتح التطبيق والعودة إليه. ${typeof Sched!=='undefined'?esc(Sched.limits()):''}</p>
+      ${typeof BgNative!=='undefined'&&BgNative.available()?`<label class="srcsw"><input type="checkbox" data-bgn ${BgNative.enabled()?'checked':''}> 🧪 أعمال جديدة والتطبيق مغلق (تجريبي): يسأل StashDB حين يسمح النظام ويرسل إشعارًا</label><p class="snote">النظام يحدد التوقيت (iOS حسب استخدامك والبطارية، Android كل ~12 ساعة). يحتاج مفتاح StashDB.</p>`:''}
       <h4>المصادر</h4>${sw('tpdb','ThePornDB — صور الممثلة')}${sw('tpdbs','ThePornDB — صور المشاهد')}${sw('stash','StashDB — صور الممثلة')}${sw('stashs','StashDB — صور المشاهد')}${sw('wiki','Wikimedia Commons — أرشيف')}
       <p class="snote">${LS.get('vkte_key')?'':'⚠ لا مفتاح ThePornDB. '}${LS.get('vkte_stash')?'':'⚠ لا مفتاح StashDB. '}المفاتيح من إعدادات التطبيق.</p>
       <h4>أقل جودة مقبولة</h4>${opt('minPx',S.minPx,[[0,'كل الصور'],[800,'800 بكسل فأكثر'],[1500,'1500 بكسل فأكثر'],[2500,'2500 بكسل فأكثر']])}
@@ -444,7 +445,8 @@ const Studio=(()=>{
   function onChange(e){ const t=e.target;
     if(t.dataset.set){ const k=t.dataset.set, v=t.value; S[k]=/^\d+$/.test(v)?+v:v; kvSet('settings',S).then(()=>toast('حُفظ'),()=>toast('تعذّر حفظ الإعداد')); }
     if(t.dataset.src){ S.src[t.dataset.src]=t.checked?1:0; kvSet('settings',S); }
-    if(t.hasAttribute('data-bg')&&typeof Sched!=='undefined'){ Sched.setMode(t.value); toast('حُفظ'); } }
+    if(t.hasAttribute('data-bg')&&typeof Sched!=='undefined'){ Sched.setMode(t.value); toast('حُفظ'); if(typeof BgNative!=='undefined') BgNative.config(); }
+    if(t.hasAttribute('data-bgn')&&typeof BgNative!=='undefined'){ BgNative.setEnabled(t.checked).then(ok=>{ if(ok) toast(t.checked?'فُعّل التحديث في الخلفية':'أُوقف التحديث في الخلفية'); }); } }
 
   // ---------- الربط مع التطبيق ----------
   function init(){ const m=root(); if(!m) return; m.addEventListener('click',onClick); m.addEventListener('change',onChange);

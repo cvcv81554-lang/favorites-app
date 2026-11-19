@@ -54,4 +54,20 @@ if (!s.includes('privacyCover')) {
   if (a.includes('showPrivacyCover()\n') && a.includes('hidePrivacyCover()\n')) { s = a; writeFileSync(del, s); }
   else console.warn('تحذير: لم أجد دوال AppDelegate المتوقعة؛ تغطية الخلفية ستعتمد على طبقة الواجهة فقط');
 }
+// Background Runner: مهمة BGTaskScheduler + أوضاع الخلفية + تسجيل المهمة في AppDelegate
+setArr('BGTaskSchedulerPermittedIdentifiers', ['com.favlib.app.check']);
+setArr('UIBackgroundModes', ['fetch', 'processing']);
+s = readFileSync(del, 'utf8');
+if (!s.includes('CapacitorBackgroundRunner')) {
+  const b = s.replace(/import Capacitor
+/, 'import Capacitor
+import CapacitorBackgroundRunner
+')
+    .replace(/(func application\(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: \[UIApplication\.LaunchOptionsKey: Any\]\?\) -> Bool \{)/,
+      '$1
+        BackgroundRunnerPlugin.registerBackgroundTask()
+        BackgroundRunnerPlugin.handleApplicationDidFinishLaunching(launchOptions: launchOptions)');
+  if (!b.includes('import CapacitorBackgroundRunner') || !b.includes('registerBackgroundTask()')) { console.error('تعذّر تسجيل Background Runner في AppDelegate'); process.exit(1); }
+  writeFileSync(del, b);
+}
 console.log('ios patched');

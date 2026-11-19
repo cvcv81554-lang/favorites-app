@@ -134,6 +134,8 @@ async function resize(file){ const im=await _decode(file); try{ return _enc(_sca
 async function mkThumb(src,max=IMGQ.thumb){ const im=await _decode(src); try{ return _enc(_scaled(im,max),IMGQ.thumbQ); } finally{ if(im.close) im.close(); } }
 
 // v28: تُنشأ المصغّرات الناقصة بأولوية الظاهر أولًا، وتُحدَّث البطاقة في مكانها بدل إعادة بناء الشبكة (لا قفز ولا فقدان تركيز)
+// (v35) انتظار لحظة خمول حقيقية بين الصور (لا ينافس التمرير أو فتح الصفحات على الجوال/التلفاز)
+const idleWait=ms=>new Promise(r=>setTimeout(()=>{ if(window.requestIdleCallback) requestIdleCallback(()=>r(),{timeout:1500}); else r(); },ms));
 async function backfillThumbs(){
   const order=new Map(); (render.list||[]).forEach((i,n)=>order.set(i.id,n));
   const todo=items.filter(it=>it.photos&&it.photos[0]&&!it.thumb).sort((a,b)=>(order.has(a.id)?order.get(a.id):1e9)-(order.has(b.id)?order.get(b.id):1e9));
@@ -141,13 +143,13 @@ async function backfillThumbs(){
   for(const it of todo){ if(!items.includes(it)||it.thumb) continue;
     try{ const t=await mkThumb(it.photos[0]); if(items.includes(it)&&!it.thumb){ it.thumb=t; await save(it); ch=true;
         document.querySelectorAll('.card[data-id="'+it.id+'"] .ph img.on,.av img[data-pid="'+it.id+'"]').forEach(im=>{ im.src=pic(it); }); } }catch{}
-    if(++k%2===0) await new Promise(r=>setTimeout(r,TVLITE?120:40)); }
+    if(++k%2===0) await idleWait(TVLITE?120:40); }
   // v31: ترقية هادئة لمصغّرات الإصدارات السابقة (360px) إلى الدقة الأعلى، مرة واحدة لكل ممثلة وبالأولوية للظاهر. الصور الأصلية لا تُمس.
   const up=TVLITE?[]:items.filter(it=>it.thumbV!==3&&it.photos&&it.photos[0]&&PB.local(it.photos[0])).sort((a,b)=>(order.has(a.id)?order.get(a.id):1e9)-(order.has(b.id)?order.get(b.id):1e9));
   let u=0; for(const it of up){ if(!items.includes(it)) continue; if(document.hidden){ await new Promise(r=>{ const f=()=>{ if(!document.hidden){ removeEventListener('visibilitychange',f); r(); } }; addEventListener('visibilitychange',f); }); }
     try{ const t=await mkThumb(it.photos[0]); if(items.includes(it)){ it.thumb=t; it.thumbV=3; await save(it); ch=true; 
         document.querySelectorAll('.card[data-id="'+it.id+'"] .ph img.on').forEach(im=>{ im.src=pic(it); }); } }catch{ it.thumbV=3; }
-    if(++u%2===0) await new Promise(r=>setTimeout(r,TVLITE?200:90)); }
+    if(++u%2===0) await idleWait(TVLITE?200:90); }
   if(ch&&!document.querySelector('.overlay.show')&&!TVLITE) render(); }
 
 // ===== دوال الأعمال المشتركة (لداخل ملف الممثلة ومركز الأعمال المستقل) =====

@@ -1120,3 +1120,17 @@ html.tvapp #mStudio{padding:1.4rem 3rem 2rem}
 html.tvapp #mStudio :is(.sj,.sst,.sgem,.spf,.sses):focus{outline:none;box-shadow:0 0 0 .22rem #fff,0 .6rem 1.6rem rgba(0,0,0,.6);transform:scale(1.05);z-index:2}
 html.tvapp #mStudio .shero{max-height:min(56vh,620px)}
 html.tv .chip.tvf{border-radius:var(--r-pill)}html.tv .ib.tvf{border-radius:var(--r-sm)}
+/* ===== v35 الدفعة 2: التراتبية ===== */
+/* الأعمال: «اقتراح السهرة» مدمج (كان ~180px قبل أول عمل)، ورقائق الفرز صف واحد يُسحب أفقيًا */
+html:not(.tvapp) .wk-hero{padding:8px 10px;gap:10px;margin-bottom:8px}
+html:not(.tvapp) .wk-hero-p{width:64px;aspect-ratio:1}
+html:not(.tvapp) .wk-hero .btn{min-height:32px;padding:4px 11px;font-size:.8rem}
+html:not(.tvapp) .wk-sub{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+html:not(.tvapp) .wk-sub::-webkit-scrollbar{display:none}
+html:not(.tvapp) .wk-sub>*{flex:none}
+/* عنوان العمل القصير لا يترك فراغًا */
+.wk-t{min-height:0}
+/* ملف الممثلة: الاسم لا يلامس الصورة */
+html:not(.tvapp) .car{bottom:112px}
+/* الإشعار فوق شريط «تعديل/حذف» في ملف الممثلة بدل أن يغطيه */
+body:has(#ovDetail.show) .toast,body:has(#ovDetail.show) #undoT{bottom:calc(var(--sb) + 92px)}

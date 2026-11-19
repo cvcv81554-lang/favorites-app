@@ -174,15 +174,19 @@ const Studio=(()=>{
     await putImgs(done); }
 
   // التكرار: نفس البصمة تقريبًا (فرق ≤ 6 بت) لنفس الممثلة → تبقى الأعلى دقة وتُربط بقيتها بها (للمقارنة)
-  const ham=(a,b)=>{ let d=0; for(let i=0;i<16;i++){ let v=parseInt(a[i],16)^parseInt(b[i],16); while(v){ d+=v&1; v>>=1; } } return d; };
+  // (v35) جدول بتات جاهز بدل parseInt وحلقة لكل خانة — نفس النتيجة
+  const HX={}; '0123456789abcdef'.split('').forEach((c,i)=>{ HX[c]=i; HX[c.toUpperCase()]=i; }); const POP=[0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4];
+  const ham=(a,b)=>{ let d=0; for(let i=0;i<16;i++){ const x=HX[a[i]], y=HX[b[i]]; if(x===undefined||y===undefined){ let v=parseInt(a[i],16)^parseInt(b[i],16); while(v){ d+=v&1; v>>=1; } } else d+=POP[x^y]; } return d; };
   // نسخة من الصورة نفسها: بصمة شبه مطابقة + نفس نسبة الأبعاد. لقطات الجلسة الواحدة متقاربة بطبيعتها، فلا تُعدّ نسخًا إلا بتطابق تام
   const isDup=(a,b)=>{ if(a.w&&b.w&&Math.abs(a.w/a.h-b.w/b.h)>0.02*(a.w/a.h)) return false; const d=ham(a.dh,b.dh);
     if(a.sess&&b.sess&&a.sess.k===b.sess.k&&a.src===b.src) return d===0; return d<=4; };
   function dedupe(){ const by={}; IMG.forEach(x=>{ if(x.dh&&x.dh!=='-') (by[x.pid]=by[x.pid]||[]).push(x); }); const ch=[];
     Object.values(by).forEach(a=>{ a.sort((x,y)=>px(y)-px(x)||(y.bytes||0)-(x.bytes||0));
+      const old=new Map(a.map(x=>[x,(x.dupOf||'')+'|'+(x.dups||0)]));
       a.forEach(x=>{ if(x.dupOf){ x.dupOf=''; } x.dups=0; });
-      for(let i=0;i<a.length;i++){ if(a[i].dupOf) continue; for(let j=i+1;j<a.length;j++){ if(!a[j].dupOf&&isDup(a[i],a[j])){ a[j].dupOf=a[i].id; a[i].dups++; } } } ch.push(...a); });
-    putImgs(ch); }
+      for(let i=0;i<a.length;i++){ if(a[i].dupOf) continue; for(let j=i+1;j<a.length;j++){ if(!a[j].dupOf&&isDup(a[i],a[j])){ a[j].dupOf=a[i].id; a[i].dups++; } } }
+      a.forEach(x=>{ if(old.get(x)!==(x.dupOf||'')+'|'+(x.dups||0)) ch.push(x); }); });   // (v35) يُكتب ما تغيّر فقط (كان يعيد كتابة كل الصور المبصومة)
+    if(ch.length) putImgs(ch); }
   const similar=x=>x.dh&&x.dh!=='-'?[...IMG.values()].filter(y=>y.id!==x.id&&visible(y)&&y.dh&&y.dh!=='-'&&ham(x.dh,y.dh)<=14).sort((a,b)=>ham(x.dh,a.dh)-ham(x.dh,b.dh)).slice(0,30):[];
   const versions=x=>{ const root=x.dupOf?IMG.get(x.dupOf):x; return root?[root,...[...IMG.values()].filter(y=>y.dupOf===root.id)].sort((a,b)=>px(b)-px(a)):[x]; };
   const sessionOf=x=>x.sess?list().filter(y=>y.sess&&y.sess.k===x.sess.k).sort((a,b)=>a.kind===b.kind?0:a.kind==='promo'?-1:1):[];
@@ -239,7 +243,9 @@ const Studio=(()=>{
   function justify(arr,W,H,gap=4){ const rows=[]; let row=[], sum=0;
     arr.forEach(x=>{ const a=Math.max(.45,Math.min(2.4,aspectGuess(x))); row.push([x,a]); sum+=a; if(sum*H+(row.length-1)*gap>=W){ const h=(W-(row.length-1)*gap)/sum; rows.push({h,row}); row=[]; sum=0; } });
     if(row.length) rows.push({h:Math.min(H,(W-(row.length-1)*gap)/sum),row,last:1}); return rows; }
-  const thumb=x=>x.prev||x.url;
+  // (v35) StashDB (stash-box) يدعم رسميًا ?size=300|600|1280 — الشبكات تطلب 600 بدل الأصل (ميغابايتات). العارض يبقى بالأصل.
+  const sized=(u,n)=>{ try{ const U=new URL(u); if(!/(^|\.)stashdb\.org$/.test(U.hostname)||!/\/images\//.test(U.pathname)||U.searchParams.has('size')) return ''; U.searchParams.set('size',String(n)); return U.toString(); }catch{ return ''; } };
+  const thumb=x=>x.prev||sized(x.url,600)||x.url;
   const imgTag=(x,w,h,cls='')=>`<button type="button" class="sj ${cls}" data-si="${x.id}" style="width:${w.toFixed(1)}px;height:${h.toFixed(1)}px;${x.col?'background:'+x.col:''}"><img loading="lazy" decoding="async" src="${esc(thumb(x))}" alt="" onload="this.classList.add('ok')" onerror="Studio._err(this,'${x.id}')">${x.like?'<i class="sl">♥</i>':''}</button>`;
   function gridHTML(arr,key,H){ const W=Math.max(280,(root().clientWidth||360)-28); H=H||(W<500?150:W<900?200:240);
     const rows=justify(arr.slice(0,LIM[key]||60),W,H);
@@ -268,7 +274,7 @@ const Studio=(()=>{
     markShown([potd,gem,...td].filter(Boolean).map(x=>x.id));
     lists.potd=potd?[potd]:[]; lists.gem=gem?[gem]:[];
     let h='';
-    if(potd) h+=`<button type="button" class="shero" data-si="${potd.id}" data-k="potd" style="${potd.col?'--c:'+potd.col:''}"><img src="${esc(potd.url)}" alt="" onload="this.classList.add('ok')" onerror="this.src='${esc(thumb(potd))}'"><div class="shc"><small>صورة اليوم</small><b>${esc(pname(potd.pid))}</b><span>${esc(meta(potd))}</span></div></button>`;
+    if(potd) h+=`<button type="button" class="shero" data-si="${potd.id}" data-k="potd" style="${potd.col?'--c:'+potd.col:''}"><img src="${esc(sized(potd.url,1280)||potd.url)}" alt="" onload="this.classList.add('ok')" onerror="this.onerror=null;this.src='${esc(potd.prev||potd.url)}'"><div class="shc"><small>صورة اليوم</small><b>${esc(pname(potd.pid))}</b><span>${esc(meta(potd))}</span></div></button>`;
     h+=sec('اكتشاف اليوم','مجموعة جديدة كل يوم — بلا تكرار لما رأيته',grid(td,'today'));
     if(gem) h+=sec('جوهرة مخفية','صورة نادرة لم تظهر لك من قبل',`<button type="button" class="sgem" data-si="${gem.id}" data-k="gem"><img loading="lazy" src="${esc(thumb(gem))}" alt="" onload="this.classList.add('ok')"><span>${esc(pname(gem.pid))} · ${esc(KIND[gem.kind]||'')}${gem.pub?' · '+esc(gem.pub.slice(0,4)):''}</span></button>`);
     if(sw) h+=sec('جلسة الأسبوع',esc([sw.t,sw.st,pname(sw.pid),sw.d&&sw.d.slice(0,4)].filter(Boolean).join(' · ')),grid(sw.imgs,'sw',120)+`<button type="button" class="slink" data-sess="${esc(sw.k)}">افتح الجلسة كاملة ›</button>`);
@@ -457,5 +463,5 @@ const Studio=(()=>{
   function retarget(from,to){ const go=()=>{ const ch=[]; IMG.forEach(x=>{ if(from.includes(x.pid)){ x.pid=to; ch.push(x); } }); from.forEach(id=>{ delete KV.perfAt[id]; }); return putImgs(ch).then(()=>saveKV('perfAt')); };
     return loaded?go():load().then(go); }
   return {retarget,open:v=>open(v).then(()=>{ if(document.documentElement.classList.contains('tvapp')) focusFirst(); }),tvBack,move,discover,isOpen,_err:(img,id)=>{ const x=IMG.get(id); if(x&&img.src!==x.url&&x.prev){ img.src=x.url; return; } img.closest('button')&&img.closest('button').classList.add('bad'); },
-    _test:{IMG,load,SEL,sessions,dedupe,ham,justify,quality,rarity,versions,similar,get S(){ return S; },get KV(){ return KV; }}};
+    _test:{sized,thumb,IMG,load,SEL,sessions,dedupe,ham,justify,quality,rarity,versions,similar,get S(){ return S; },get KV(){ return KV; }}};
 })();

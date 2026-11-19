@@ -105,6 +105,15 @@ ok('ألوان واجهة التلفاز تتبع اللون المختار', tv
   await ctx2.close();
 }
 
+const sz = await page.evaluate(() => ({ a: Studio._test.sized('https://stashdb.org/images/ab/cd/abcd', 600), b: Studio._test.sized('https://evil.example/images/x', 600), c: Studio._test.thumb({ url: 'https://stashdb.org/images/x' }), d: Studio._test.thumb({ url: 'https://cdn.theporndb.net/x.jpg', prev: 'https://cdn.theporndb.net/p.jpg' }), e: Studio._test.sized('https://stashdb.org/images/x?size=300', 600) }));
+ok('الاستديو: صور StashDB في الشبكات بمقاس 600 (معامل رسمي)، وغيرها كما هي', sz.a === 'https://stashdb.org/images/ab/cd/abcd?size=600' && sz.b === '' && sz.c === 'https://stashdb.org/images/x?size=600' && sz.d === 'https://cdn.theporndb.net/p.jpg' && sz.e === '', JSON.stringify(sz));
+const srch = await page.evaluate(async () => { const q = document.getElementById('q'); const go = async v => { q.value = v; q.dispatchEvent(new Event('input', { bubbles: true })); await new Promise(r => setTimeout(r, 400)); return [...document.querySelectorAll('#grid .card')].map(c => c.dataset.id); };
+  const a = await go('zzworkx'); const it = items.find(x => x.id === 'm2'); it.works.push({ t: 'ZZWorkX Title', s: 'S' }); await save(it); const b = await go('zzworkx'); it.works[0].t = 'Renamed Q'; await save(it); const c = await go('zzworkx'); await go(''); return { a: a.length, b: b.includes('m2'), c: c.includes('m2') }; });
+ok('البحث: الذاكرة المؤقتة تتحدث بعد إضافة عمل وتعديل عنوانه', srch.a === 0 && srch.b && !srch.c, JSON.stringify(srch));
+const dd = await page.evaluate(() => { const T = Studio._test; const mk = (id, dh, w) => ({ id, pid: 'm1', url: 'https://img.test/' + id, src: 'stash', kind: 'portrait', w, h: w * 1.5, found: 1, albums: [], dh });
+  T.IMG.set('d1', mk('d1', 'ffffffffffffffff', 2000)); T.IMG.set('d2', mk('d2', 'fffffffffffffff0', 1000)); T.IMG.set('d3', mk('d3', '0000000000000000', 1500));
+  T.dedupe(); return { d2: T.IMG.get('d2').dupOf, d1: T.IMG.get('d1').dups, d3: T.IMG.get('d3').dupOf || '', h: T.ham('ffffffffffffffff', 'fffffffffffffff0'), H: T.ham('F0', 'f0') }; });
+ok('الاستديو: كشف النسخ بعد التحسين (الأعلى دقة تبقى، والفرق بالبتات صحيح)', dd.d2 === 'd1' && dd.d1 === 1 && dd.d3 === '' && dd.h === 4, JSON.stringify(dd));
 ok('لا أخطاء JavaScript', errors.length === 0, errors.slice(0, 3).join(' | '));
 console.log(results.join('\n')); console.log(`\n${results.length - failed}/${results.length} نجح`);
 await browser.close(); server.close(); process.exit(failed ? 1 : 0);

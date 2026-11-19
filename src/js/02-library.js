@@ -1,6 +1,12 @@
 /* ---- 02-library.js ---- */
 // ===== العرض الرئيسي (الممثلات) =====
 let view=LS.get('vkte_view','2');
+// (v35) نص البحث لكل ممثلة يُبنى مرة ويُعاد بناؤه فقط إذا تغيّر سجلها (كان يُبنى لكل ممثلة مع كل حرف)
+const _six=new WeakMap();
+HOOKS.saved.push(arr=>{ (arr||[]).forEach(x=>{ if(x&&typeof x==='object') _six.delete(x); }); });   // أي حفظ يُسقط نص البحث القديم
+function searchText(i){ const sig=(i.updated||0)+'|'+i.name+'|'+(i.works||[]).length+'|'+(i.tags||[]).length+'|'+(i.notes||'').length+'|'+(i.accounts||[]).length+'|'+(i.aliases||'');
+  const c=_six.get(i); if(c&&c.sig===sig) return c.s;
+  const s=[i.name,i.aliases,i.country,(i.tags||[]).join(' '),i.notes,(i.works||[]).map(w=>w.t+' '+w.s).join(' '),(i.accounts||[]).map(a=>a.v).join(' ')].join(' ').toLowerCase(); _six.set(i,{sig,s}); return s; }
 function applyView(){ $('grid').classList.toggle('c3',view==='3'); $('grid').classList.toggle('lst',view==='l'); }
 $('bView').onclick=()=>{ const V=['2','3','l']; view=V[(V.indexOf(view)+1)%3]; LS.set('vkte_view',view); applyView(); toast(view==='l'?'عرض قائمة':view==='3'?'شبكة مضغوطة':'شبكة'); };
 function list(){
@@ -9,7 +15,7 @@ function list(){
   if(state.list) l=l.filter(i=>(i.lists||[]).includes(state.list));
   if(state.smart){ const sm=SMART.find(x=>x[0]===state.smart); if(sm) l=l.filter(sm[2]); }
   if(state.tag) l=l.filter(i=>(i.tags||[]).includes(state.tag));
-  if(q) l=l.filter(i=>[i.name,i.aliases,i.country,(i.tags||[]).join(' '),i.notes,(i.works||[]).map(w=>w.t+' '+w.s).join(' '),(i.accounts||[]).map(a=>a.v).join(' ')].join(' ').toLowerCase().includes(q));
+  if(q) l=l.filter(i=>searchText(i).includes(q));
   const s=$('sort').value;
   if(s==='rating') l.sort((a,b)=>(b.rating||0)-(a.rating||0));
   else if(s==='name') l.sort((a,b)=>a.name.localeCompare(b.name,'ar'));
